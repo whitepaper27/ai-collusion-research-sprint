@@ -16,7 +16,8 @@ def test_fixture_audit_pipeline_renders_figure_1(tmp_path):
     for d in items:
         assert {f"{v.value}.json" for v in View} <= {p.name for p in d.iterdir()}
         assert d.name.startswith("T")  # opaque id, not a fixture id
-    id_map = json.loads((rev / "_private" / "id_map.json").read_text())
+    assert not (rev / "_private").exists()  # private files live outside the export tree
+    id_map = json.loads((Path(f"{rev}.private") / "id_map.json").read_text())
     exported = "".join(p.read_text() for d in items for p in d.glob("*.json"))
     assert not any(fid in exported for fid in id_map["items"].values())
     assert id_map["salt"] not in exported

@@ -20,7 +20,7 @@ Conventions (written down so they cannot drift):
 - Citation validity: a cited id is valid iff it exists in that trajectory's export of that
   view (`visible_ids[(item_id, view)]`).
 - Duplicate records for one (item, view) are reduced by `dedupe_predictions` in every
-  function: the first answered record wins. `run_auditor` already folds R-AUD-08's single
+  function: the first record wins, whatever its status. `run_auditor` already folds R-AUD-08's single
   identical transport retry into one record, so every further record is a re-run; their number
   is reported as `superseded_records` (records minus distinct (item, view) keys) so re-runs
   are always visible.
@@ -65,20 +65,18 @@ def _require_overlap(
 
 
 def dedupe_predictions(predictions: Sequence[Prediction]) -> list[Prediction]:
-    """One record per (item, view), applied by every metric.
+    """One record per (item, view), applied by every metric: the FIRST record counts.
 
-    The first answered record (category not None) wins, so a transport retry that later
-    succeeded counts once and re-running a session cannot replace its first answer. A key
-    with no answered record keeps its first record (a not-completed call).
+    Owner decision 2026-10-25 (sol.md §10's single bounded retry): `run_auditor` already makes
+    its one identical transport retry inside a single record, so any later record for the same
+    (item, view) is a re-run. Re-runs never replace the first record, whatever its status: a
+    first record that failed stays not-completed. Later records are kept on disk and counted
+    as `superseded_records`.
     """
-    first_any: dict[tuple[str, str], Prediction] = {}
-    first_answer: dict[tuple[str, str], Prediction] = {}
+    first: dict[tuple[str, str], Prediction] = {}
     for p in predictions:
-        key = (p["item_id"], p["view"])
-        first_any.setdefault(key, p)
-        if p.get("category") is not None:
-            first_answer.setdefault(key, p)
-    return [first_answer.get(k, v) for k, v in first_any.items()]
+        first.setdefault((p["item_id"], p["view"]), p)
+    return list(first.values())
 
 
 def _attempts(

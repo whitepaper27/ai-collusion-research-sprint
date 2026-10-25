@@ -193,7 +193,7 @@ def test_r_aud_02_six_dev_and_twelve_heldout_in_six_pairs():
         a, b = members
         assert a["partition"] == b["partition"] == HELDOUT
         assert a["contrast"] == b["contrast"]
-        assert a["contrast"] in ("agreement", "knowledge", "execution")
+        assert a["contrast"] in ("agreement", "knowledge", "execution", "accuracy")
         assert a["intended_label"] != b["intended_label"]
         ta, tb = templates[a["template_id"]], templates[b["template_id"]]
         assert ta is tb, "both members of a pair come from one template"

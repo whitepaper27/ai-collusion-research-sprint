@@ -12,7 +12,7 @@ Exports are written to `<out>.staging/<trajectory id>/<view>.json` with opaque i
 (generic terms inside agent-authored text, live only) only under `--ack-review`, after a human
 has triaged them. Review hits are never redacted (that would change evidence). Every hit is
 printed and saved, with the id map and salt that join exports back to fixtures or runs, in the
-private dir: `<out>/_private/` by default, or `--private-out` to keep it outside the export
+private dir: `<out>.private/` by default, or `--private-out`; either way outside the export
 tree (`audit report --private-dir` reads it from there). Private files must never be shown to
 the auditor or used while labelling. An existing `<out>`, staging or private dir is refused
 (exit 2). Live auditor calls need `--confirm-spend`, AUDITOR_MODEL_ID, ANTHROPIC_API_KEY and
@@ -104,7 +104,7 @@ def cmd_export_review(argv: list[str]) -> int:
     p.add_argument(
         "--private-out",
         default=None,
-        help="dir for id_map.json and leak_review.json (default: <out>/_private)",
+        help="dir for id_map.json and leak_review.json (default: <out>.private)",
     )
     p.add_argument("--salt", default=None)
     p.add_argument(
@@ -229,12 +229,11 @@ def _export_review(
 def _private_dir(out: Path, staging: Path, private_out: str | None) -> Path:
     """Where id_map.json and leak_review.json go (in staging while exports are unchecked).
 
-    Default `<out>/_private` (kept for existing callers; it is promoted with the exports).
-    With `--private-out` the private files never enter the export tree; a path inside
-    `<out>` is refused, since it would be promoted into the tree a human labels from.
+    Default `<out>.private` (owner decision 2026-10-25): the private files never enter the
+    export tree a human labels from. A `--private-out` path inside `<out>` is refused.
     """
     if private_out is None:
-        return staging / "_private"
+        return out.with_name(out.name + ".private")
     from ethwall.cli import UsageError
 
     path = Path(private_out).resolve()
@@ -388,7 +387,7 @@ def audit_report(argv: list[str]) -> int:
     p.add_argument(
         "--private-dir",
         default=None,
-        help="dir holding id_map.json (default: <exports>/_private)",
+        help="dir holding id_map.json (default: <exports>.private)",
     )
     p.add_argument("--source", choices=["fixture", "live"], default="fixture")
     p.add_argument("--stamp", default=None)
@@ -397,7 +396,8 @@ def audit_report(argv: list[str]) -> int:
     preds = read_predictions(a.predictions)
     kind, _, arg = a.references.partition(":")
     if kind == "fixtures":
-        private = Path(a.private_dir or Path(a.exports) / "_private")
+        exports = Path(a.exports)
+        private = Path(a.private_dir or exports.with_name(exports.name + ".private"))
         id_map = json.loads((private / "id_map.json").read_text(encoding="utf-8"))[
             "items"
         ]

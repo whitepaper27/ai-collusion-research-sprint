@@ -59,7 +59,8 @@ def test_r_cli_03_live_export_review_exports_clean_mock_runs(tmp_path):
     assert export(root, out) == 0
     assert len(items(out)) == 2
     assert not Path(f"{out}.staging").exists()
-    review = json.loads((out / "_private" / "leak_review.json").read_text())
+    assert not (out / "_private").exists()
+    review = json.loads((Path(f"{out}.private") / "leak_review.json").read_text())
     assert review["review"] == [] and review["blocking"] == []
 
 
@@ -69,12 +70,12 @@ def test_r_aud_06_live_review_hits_need_ack_and_are_never_redacted(tmp_path, cap
     root, out = mock_runs(tmp_path), tmp_path / "rev"
     for d in run_dirs(root):
         plant(d, PLANTED)
-    staging = Path(f"{out}.staging")
+    staging, private = Path(f"{out}.staging"), Path(f"{out}.private")
 
     assert export(root, out) == 1
     printed = capsys.readouterr().out
     assert not out.exists()
-    saved = json.loads((staging / "_private" / "leak_review.json").read_text())
+    saved = json.loads((private / "leak_review.json").read_text())
     assert saved["acked"] is False and saved["blocking"] == []
     # 3 words x 3 text-bearing views (messages, combined, linked) x 2 episodes
     assert len(saved["review"]) == 18
@@ -84,9 +85,10 @@ def test_r_aud_06_live_review_hits_need_ack_and_are_never_redacted(tmp_path, cap
         assert any(f"'{w}'" in h for h in saved["review"])
 
     shutil.rmtree(staging)  # the human triaged the hits
+    shutil.rmtree(private)
     assert export(root, out, "--ack-review") == 0
     assert not staging.exists()
-    saved = json.loads((out / "_private" / "leak_review.json").read_text())
+    saved = json.loads((private / "leak_review.json").read_text())
     assert saved["acked"] is True and len(saved["review"]) == 18
     for d in items(out):
         combined = json.loads((d / "combined.json").read_text())
@@ -104,9 +106,7 @@ def test_r_aud_06_blocking_hits_are_never_ackable(tmp_path, capsys):
     assert not out.exists()
     printed = capsys.readouterr().out
     assert "LEAK " in printed and d.name in printed
-    saved = json.loads(
-        (Path(f"{out}.staging") / "_private" / "leak_review.json").read_text()
-    )
+    saved = json.loads((Path(f"{out}.private") / "leak_review.json").read_text())
     assert saved["blocking"]
 
 

@@ -247,18 +247,22 @@ def test_r_aud_11_bootstrap_rejects_clusters_in_another_id_space():
 
 
 def test_r_aud_10_duplicate_rows_count_once_first_answer_wins():
-    """R-AUD-10: retries and re-runs of one item x view count once (first answer wins)."""
+    """R-AUD-10: re-runs of one item x view count once: the FIRST record wins, whatever its
+    status (owner decision 2026-10-25; sol.md §10's single bounded retry lives inside one
+    record, so a later record is a re-run and cannot replace a failed first record)."""
     preds = [
-        p("a", None),  # transport error, then a retry that answered
+        p("a", None),  # transport error; a later re-run must not replace it
         p("a", CC),
         p("c", CA),
         p("c", LW),  # a re-run cannot replace the first answer
     ]
     m = mt.audit_metrics(preds, REFS)
-    assert m["attempts"] == 2 and m["not_completed"] == 0
-    assert m["coverage_of_planned"] == 1.0
+    assert m["attempts"] == 1 and m["not_completed"] == 1
+    assert m["coverage_of_planned"] == 0.5
+    assert m["superseded_records"] == 2
     assert m["coordination"]["fp"] == 1
-    assert sum(sum(r.values()) for r in m["confusion"].values()) == 2
+    # only "c" was answered first; "a"'s failed first record stays out of the confusion matrix
+    assert sum(sum(r.values()) for r in m["confusion"].values()) == 1
     paired = mt.paired_view_comparison(
         preds + [p("c", LW, "linked")], REFS, "combined", "linked"
     )
