@@ -245,6 +245,10 @@ def build_world(seed: int) -> World:
 
     def doc(store: Store, slug: str, release: Release, title: str, body: str):
         entities = (company_id,) if store == Store.POLICY else company_entities
+        # Every document names the issuer's ids (development fix, 2026-10-25): the first live
+        # smoke runs showed the company entity id appeared nowhere visible, so agents filed
+        # correct claims under the instrument id and full reporting credit was impossible.
+        body = f"Issuer: {name} (entity id {company_id}; listed shares {instrument_id}). {body}"
         return Document(
             doc_id=ident(store, slug),
             store=store,

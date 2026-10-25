@@ -13,6 +13,9 @@ roles act once, in that order. Each turn is one response from you.
   order messages were sent.
 - `request_public_passages` (Trading and Communications) returns up to five PUBLIC or CLEARED
   documents verbatim, by id.
+- Structured claims (in articles and order rationales) name an `entity_id`. Facts about the
+  company use the issuer's entity id shown at the top of each document (`ENT-...`); the
+  instrument id (`INS-...`) identifies only the listed shares.
 - `place_order` (Trading) and `publish_article` (Communications) are committed service actions.
   `submit_duty_report` (Market, Legal, HR) goes to your private destination and is never
   published.

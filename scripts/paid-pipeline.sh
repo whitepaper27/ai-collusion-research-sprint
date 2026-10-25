@@ -36,6 +36,8 @@ set +a
 
 E="uv run --frozen ethwall"
 FREEZE_ID="${FREEZE_ID:-main-v1}"
+SMOKE_PART="${SMOKE_PART:-smoke}"      # re-run after a development fix: e.g. smoke-r2
+CONTROL_PART="${CONTROL_PART:-control}"
 step() { printf '\n== %s (%s)\n' "$*" "$(date '+%H:%M:%S')"; }
 commit() { git add -A "$@" && { git diff --cached --quiet || git commit -qm "$MSG"; }; }
 
@@ -112,13 +114,13 @@ stage_auditor_heldout() {
 
 stage_smoke() {
   step "live smoke (seeds 100-102, both conditions)"
-  [ -d runs/smoke ] && { echo "runs/smoke exists; skipping smoke"; } || \
-    $E run --mode live --confirm-spend --partition smoke --seeds 100-102
+  [ -d "runs/$SMOKE_PART" ] && { echo "runs/$SMOKE_PART exists; skipping smoke"; } || \
+    $E run --mode live --confirm-spend --partition "$SMOKE_PART" --seeds 100-102
   step "live instructed controls (seeds 150-151, both conditions)"
-  [ -d runs/control ] && { echo "runs/control exists; skipping controls"; } || \
-    $E run --mode live --confirm-spend --partition control --seeds 150-151 --control
-  $E verify --partition smoke
-  $E verify --partition control
+  [ -d "runs/$CONTROL_PART" ] && { echo "runs/$CONTROL_PART exists; skipping controls"; } || \
+    $E run --mode live --confirm-spend --partition "$CONTROL_PART" --seeds 150-151 --control
+  $E verify --partition "$SMOKE_PART"
+  $E verify --partition "$CONTROL_PART"
 }
 
 stage_project() {
@@ -126,12 +128,12 @@ stage_project() {
   local f=protocol/decisions/main-size.json
   [ -f "$f" ] && { cat "$f"; return; }
   mkdir -p "$(dirname "$f")"
-  uv run --frozen python - "$f" <<'PY'
+  uv run --frozen python - "$f" "$SMOKE_PART" "$CONTROL_PART" <<'PY'
 import json, sys
 from pathlib import Path
 from statistics import mean
 eps = []
-for part in ("smoke", "control"):
+for part in sys.argv[2:4]:
     p = Path("spend") / part / "_spend.json"
     if p.exists():
         data = json.loads(p.read_text(encoding="utf-8"))
@@ -149,7 +151,7 @@ elif per_ep * 12 * 1.2 <= 25:
     seeds, size = "200-205", 12
 else:
     seeds, size = "", 0
-rec = {"smoke_control_episodes": len(eps), "mean_usd_per_episode": round(per_ep, 4),
+rec = {"smoke_partitions": sys.argv[2:4], "smoke_control_episodes": len(eps), "mean_usd_per_episode": round(per_ep, 4),
        "max_usd_per_episode": round(worst, 4), "projected_usd_20": round(need20, 2),
        "main_seeds": seeds, "main_episodes": size,
        "rule": "20 if 1.2x projection <= $25; else 12 (seeds 200-205) if it fits; else none"}
@@ -211,7 +213,7 @@ stage_audit_main() {
 
 stage_report() {
   step "analysis"
-  for p in smoke control main; do
+  for p in "$SMOKE_PART" "$CONTROL_PART" main; do
     [ -d "runs/$p" ] && $E analyze --partition "$p" --out "analysis/$p"
   done
   if [ -f audit/fixture-heldout.jsonl ]; then
