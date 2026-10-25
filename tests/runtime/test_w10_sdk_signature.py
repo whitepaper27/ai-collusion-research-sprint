@@ -1,13 +1,16 @@
-"""R-MOD-01: the adapter's request must match the INSTALLED Anthropic SDK, not just a fake client.
+"""R-MOD-01: the adapter's request must match the INSTALLED Anthropic SDK and the live API.
 
-A live run failed because `temperature` is no longer a keyword of `Messages.create` in the
-installed SDK. These tests check every keyword the adapter sends against the real signature.
+The first paid run found two drifts the fake-client tests missed: `temperature` is no longer a
+keyword of `Messages.create` in the installed SDK, and the live API rejects it in the body.
+These tests pin every keyword against the real signature and forbid sampling parameters.
 """
 
 import inspect
 
+import pytest
 from anthropic.resources.messages import Messages
 
+from ethwall.audit import AuditorSettings
 from ethwall.contract import (
     TOOL_SPECS,
     ChatMessage,
@@ -17,6 +20,7 @@ from ethwall.contract import (
     ToolName,
 )
 from ethwall.models import AnthropicActor
+from ethwall.models.anthropic_actor import ModelConfigError
 
 SDK_KEYWORDS = set(inspect.signature(Messages.create).parameters) - {"self"}
 
@@ -36,14 +40,25 @@ def _req(temperature: float) -> ModelRequest:
 
 def test_every_keyword_exists_in_the_installed_sdk():
     """R-MOD-01: build_kwargs only uses keywords the installed Messages.create accepts."""
-    for t in (0.0, 0.7, 1.0):
-        kwargs = AnthropicActor("m", client=object()).build_kwargs(_req(t))
-        assert set(kwargs) <= SDK_KEYWORDS, set(kwargs) - SDK_KEYWORDS
+    kwargs = AnthropicActor("m", client=object()).build_kwargs(_req(1.0))
+    assert set(kwargs) <= SDK_KEYWORDS, set(kwargs) - SDK_KEYWORDS
 
 
-def test_temperature_travels_in_the_body_only_when_not_default():
-    """R-MOD-01: non-default temperature goes in extra_body; the API default is omitted."""
-    actor = AnthropicActor("m", client=object())
-    assert actor.build_kwargs(_req(0.0))["extra_body"] == {"temperature": 0.0}
-    assert "extra_body" not in actor.build_kwargs(_req(1.0))
-    assert "temperature" not in actor.build_kwargs(_req(0.0))
+def test_no_sampling_parameter_is_ever_sent():
+    """R-MOD-01: neither a temperature keyword nor a body field reaches the API."""
+    kwargs = AnthropicActor("m", client=object()).build_kwargs(_req(1.0))
+    assert "temperature" not in kwargs
+    assert "temperature" not in kwargs.get("extra_body", {})
+
+
+def test_a_non_default_temperature_is_refused_before_any_call():
+    """R-MOD-01: a setting the API can't honour fails fast instead of being silently dropped."""
+    with pytest.raises(ModelConfigError):
+        AnthropicActor("m", client=object()).build_kwargs(_req(0.0))
+
+
+def test_auditor_default_settings_are_applicable_live():
+    """R-AUD-08: the frozen auditor settings are ones the live adapter can actually apply."""
+    s = AuditorSettings()
+    AnthropicActor("m", client=object()).build_kwargs(_req(s.temperature))
+    assert s.to_dict()["temperature"] == 1.0

@@ -7,6 +7,7 @@
 #
 # Stages (each refuses to overwrite existing outputs, so re-running resumes safely):
 #   doctor           settings present? (prints set/missing, never values)
+#   probe            ONE live auditor call on one dev export (proves the live path cheaply)
 #   auditor-dev      auditor on the 6 development fixtures x 4 views (<=24 calls)
 #   auditor-freeze   record the auditor prompt hash, model id and settings (frozen, committed)
 #   auditor-heldout  auditor on the 12 held-out fixtures x 4 views (48 calls). Predictions are
@@ -41,6 +42,27 @@ commit() { git add -A "$@" && { git diff --cached --quiet || git commit -qm "$MS
 stage_doctor() {
   step "doctor"
   $E doctor
+}
+
+stage_probe() {
+  step "probe: ONE live auditor call on one development export (proves the live path)"
+  [ -d review/fixture-dev ] || $E export-review --fixtures dev --out review/fixture-dev
+  uv run --frozen python - <<'PY'
+import json
+from pathlib import Path
+from ethwall.audit import auditor_from_env, load_auditor_prompt, run_auditor
+from ethwall.audit.auditor import auditor_ledger
+from ethwall.recorder._manifest import default_repo_root
+from ethwall.spend import load_pricing
+item = sorted(p for p in Path("review/fixture-dev").iterdir() if p.is_dir())[0]
+export = json.loads((item / "combined.json").read_text(encoding="utf-8"))
+prompt, _ = load_auditor_prompt()
+ledger = auditor_ledger(load_pricing(), default_repo_root() / "spend")
+r = run_auditor(export, model=auditor_from_env(), prompt_text=prompt, ledger=ledger)
+print(json.dumps({"status": r.status, "category": r.category, "attempts": r.attempts,
+                  "cost_usd": r.cost_usd, "error": (r.error or "")[:300]}, indent=1))
+raise SystemExit(0 if r.status == "ok" else 1)
+PY
 }
 
 stage_auditor_dev() {
@@ -201,7 +223,7 @@ stage_report() {
   MSG="Record paid-run evidence and analysis" commit runs review audit analysis protocol
 }
 
-STAGES=(doctor auditor-dev auditor-freeze auditor-heldout smoke project freeze main audit-main report)
+STAGES=(doctor probe auditor-dev auditor-freeze auditor-heldout smoke project freeze main audit-main report)
 run_stage() { "stage_${1//-/_}"; }
 if [ "${1:-}" = all ]; then
   for s in "${STAGES[@]}"; do run_stage "$s"; done

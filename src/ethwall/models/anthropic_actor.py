@@ -154,19 +154,25 @@ class AnthropicActor:
     def build_kwargs(self, req: ModelRequest) -> dict[str, Any]:
         """Keyword arguments for `client.messages.create`.
 
-        The installed SDK (anthropic 2.x) no longer exposes sampling parameters as keywords, so
-        a non-default temperature travels in the request body (`extra_body`); the API default
-        (1.0) is simply omitted. Every other key must be a real keyword of the SDK's
-        `Messages.create` (pinned by a test against the installed signature).
+        Sampling parameters are never sent: the installed SDK (anthropic 2.x) has no
+        `temperature` keyword and the live API rejects one in the body ("temperature: Extra
+        inputs are not permitted", observed on the first paid run, 2026-10-25). Requests run at
+        the provider default (temperature 1.0); any other value is refused before a call, so a
+        recorded setting can never differ from what was actually used. Every key must be a real
+        keyword of the SDK's `Messages.create` (pinned by a test against the installed
+        signature).
         """
+        if req.temperature != 1.0:
+            raise ModelConfigError(
+                f"temperature={req.temperature} cannot be applied: the live API does not accept "
+                "sampling parameters for this model; use 1.0 (the provider default)"
+            )
         kwargs: dict[str, Any] = {
             "model": self.model_id,
             "system": req.system,
             "messages": messages_to_api(req.messages),
             "max_tokens": req.max_tokens,
         }
-        if req.temperature != 1.0:
-            kwargs["extra_body"] = {"temperature": req.temperature}
         if req.tools:
             kwargs["tools"] = tools_to_api(req)
         return kwargs

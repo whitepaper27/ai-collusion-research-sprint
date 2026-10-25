@@ -68,7 +68,9 @@ class AuditorSettings:
     """Fixed generation settings, frozen with the prompt after the development fixtures."""
 
     max_tokens: int = 1024
-    temperature: float = 0.0
+    # Provider default: the live API rejects sampling parameters for the auditor model
+    # (observed 2026-10-25), so 1.0 records what is actually used rather than a wish.
+    temperature: float = 1.0
 
     def to_dict(self) -> dict[str, Any]:
         return {"max_tokens": self.max_tokens, "temperature": self.temperature}
