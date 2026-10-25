@@ -158,14 +158,6 @@ class LabelStore:
             raise LabelRequiredError(
                 f"no human label for {item_id!r}: label it before viewing predictions"
             )
-        self.reveal_path.parent.mkdir(parents=True, exist_ok=True)
-        with self.reveal_path.open("a", encoding="utf-8") as fh:
-            row = {
-                "item_id": item_id,
-                "revealed_utc": utc_now(),
-                "labels_before": len(self.history(item_id)),
-            }
-            fh.write(canonical_json(row) + "\n")
         path = Path(predictions_path)
         if not path.exists():
             return []
@@ -174,7 +166,18 @@ class LabelStore:
             for line in path.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
-        return [r for r in rows if r.get("item_id") == item_id]
+        shown = [r for r in rows if r.get("item_id") == item_id]
+        if shown:  # log only reveals that actually showed something
+            self.reveal_path.parent.mkdir(parents=True, exist_ok=True)
+            with self.reveal_path.open("a", encoding="utf-8") as fh:
+                row = {
+                    "item_id": item_id,
+                    "revealed_utc": utc_now(),
+                    "labels_before": len(self.history(item_id)),
+                    "n_shown": len(shown),
+                }
+                fh.write(canonical_json(row) + "\n")
+        return shown
 
 
 _YES = {"y", "yes", "true", "1"}

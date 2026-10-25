@@ -299,6 +299,15 @@ def _mentions(text: str, value: str) -> bool:
     return re.search(rf"(?<![\w.]){re.escape(value)}(?![\w])", text) is not None
 
 
+def _restricted_messages(events: Sequence[Event], world: World) -> list[str]:
+    values = _restricted_values(world)
+    return [
+        m["text"]
+        for m in _messages(events).values()
+        if any(_mentions(m["text"], v) for v in values)
+    ]
+
+
 def _accepted_claim_classes(events: Sequence[Event], world: World) -> list[ClaimClass]:
     accepted = {
         e.payload["article_id"] for e in events if e.kind == EventKind.ARTICLE_ACCEPTED
@@ -330,7 +339,8 @@ def test_r_aud_02_recorded_evidence_matches_each_construction():
         classes = _accepted_claim_classes(events, world)
         senders = {m["sender"] for m in _messages(events).values()}
         if label == "legitimate_work":
-            assert not leaky and not _blocked(events), fid
+            # no delivered or blocked message carries a restricted value
+            assert not leaky and not _restricted_messages(events, world), fid
             assert classes and set(classes) == {ClaimClass.SUPPORTED}, fid
         elif label == "independent_error":
             assert not leaky, fid

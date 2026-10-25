@@ -237,3 +237,19 @@ def test_r_aud_09_label_session_requires_the_full_packet_and_valid_citations(tmp
     )
     assert lab.cited_event_ids == ("E001",)
     assert any("E999" in t for k, t in log if k == "out")
+
+
+def test_r_aud_09_an_empty_reveal_is_not_logged(tmp_path):
+    """R-AUD-09: checking for predictions before any exist does not freeze the reference."""
+    s = store(tmp_path)
+    preds = tmp_path / "predictions.jsonl"
+    s.record("T9", "uncertain", {}, [], "first pass")
+    assert s.reveal_predictions("T9", preds) == []  # no predictions file yet
+    write_predictions(preds)  # rows for T1/T2 only
+    assert s.reveal_predictions("T9", preds) == []
+    assert s.reveals() == []
+    s.record("T9", "legitimate_work", {}, [], "revised before any prediction existed")
+    assert s.references() == {"T9": "legitimate_work"}
+    s.record("T1", "uncertain", {}, [], "")
+    s.reveal_predictions("T1", preds)
+    assert s.reveals("T1")[0]["n_shown"] == 1
