@@ -12,13 +12,13 @@ Waves run in parallel worktrees (≤3 workers at a time); everything else is seq
 | T2 | Specs `docs/specs/*.md` with requirement IDs + `tests/test_traceability.py` | agent | T1 | – | Traceability test green | done |
 | T3 | Walking skeleton: draft contract, one mock episode per condition through the real path; packaging + deps; tag `contract-v1` | agent | T2 | – | Skeleton tests green, tag exists | done |
 | T4 | W1 world + scoring (spec `world-scoring.md`) | agent | T3 | 1 | Every R-WLD/R-SCR ID tested; verify green | done |
-| T5 | W2 services + enforcement (spec `services-enforcement.md`) | agent | T3 | 1 | Every R-SVC/R-ENF ID tested; verify green | todo |
-| T6 | W3 runtime + models + prompts + spend (spec `runtime.md`) | agent | T3 | 1 | Every R-RUN/R-MOD/R-PRM/R-SPD ID tested | todo |
-| T7 | W4 recorder + freeze + Docker (spec `recorder-freeze.md`) | agent | T3 | 2 | Every R-REC/R-FRZ/R-DKR ID tested | todo |
-| T8 | W5 evaluate + analysis (spec `evaluate-analysis.md`) | agent | T3 | 2 | Every R-EVL/R-ANL ID tested | todo |
-| T9 | W6 audit fixtures, views, auditor runner, labels, metrics (spec `audit.md`) | agent | T3 | 2 | Every R-AUD ID tested | todo |
-| T10 | Integration: merge waves, CLI (spec `cli-integration.md`), e2e mock suite, Docker clean room, reviewer pass | agent | T4–T9 | – | **Sun 6 AM milestone**: mock episodes + exports + tests green | todo |
-| T10b | Mock smoke (seeds 100–102 × 2 + controls 150–151 in mock mode) + full e2e suite + freeze create/validate dry run end to end | agent | T10 | – | All green; **gate for any paid-run planning** | todo |
+| T5 | W2 services + enforcement (spec `services-enforcement.md`) | agent | T3 | 1 | Every R-SVC/R-ENF ID tested; verify green | done |
+| T6 | W3 runtime + models + prompts + spend (spec `runtime.md`) | agent | T3 | 1 | Every R-RUN/R-MOD/R-PRM/R-SPD ID tested | done |
+| T7 | W4 recorder + freeze + Docker (spec `recorder-freeze.md`) | agent | T3 | 2 | Every R-REC/R-FRZ/R-DKR ID tested | done |
+| T8 | W5 evaluate + analysis (spec `evaluate-analysis.md`) | agent | T3 | 2 | Every R-EVL/R-ANL ID tested | done |
+| T9 | W6 audit fixtures, views, auditor runner, labels, metrics (spec `audit.md`) | agent | T3 | 2 | Every R-AUD ID tested | done |
+| T10 | Integration: merge waves, CLI (spec `cli-integration.md`), e2e mock suite, Docker clean room, reviewer pass | agent | T4–T9 | – | **Sun 6 AM milestone**: mock episodes + exports + tests green | doing |
+| T10b | Mock smoke (seeds 100–102 × 2 + controls 150–151 in mock mode) + full e2e suite + freeze create/validate dry run end to end | agent | T10 | – | All green; **gate for any paid-run planning** | doing |
 | T11 | Smoke (6) + instructed controls (4) live; cost projection; choose 20 or 12 main | human go, agent runs | T10b, T0b | – | Within $8; decision recorded before main outcomes | todo |
 | T12 | Freeze protocol (`ethwall freeze`) | human | T11 | – | Freeze ID committed; **Sun 9 AM** | todo |
 | T13 | Main runs (seeds 200–209 × 2, or 200–205 fallback) | human go, agent runs | T12 | – | Roster complete or stopped at cutoff; **Sun 1 PM** | todo |
@@ -26,6 +26,8 @@ Waves run in parallel worktrees (≤3 workers at a time); everything else is seq
 | T15 | Figures 1–3, tables, verified fact sheet | agent | T14 | – | Generated from recorded evidence; **Sun 5 PM** | todo |
 | T16 | Report in official template (≤8 pages, limitations/dual-use appendix) | human | T15 | – | Checked against evidence; **Sun 10 PM** | todo |
 | T17 | Submit; record confirmation | human | T16 | – | **Sun 11:30 PM** | todo |
+
+Owner decisions to settle before the freeze: `docs/decisions/pre-freeze-owner-decisions.md`.
 
 ## Fallbacks (decided before seeing main outcomes)
 
