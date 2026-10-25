@@ -123,6 +123,17 @@ stage_smoke() {
   $E verify --partition "$CONTROL_PART"
 }
 
+stage_controls_finish() {
+  step "finish instructed controls in $CONTROL_PART (missing cells; a re-run is labelled by the roster)"
+  local spec cond seed
+  for spec in ${CONTROLS_TODO:-baseline:151 guarded:151 guarded:150}; do
+    cond="${spec%%:*}"; seed="${spec##*:}"
+    $E run --mode live --confirm-spend --partition "$CONTROL_PART" --control \
+      --condition "$cond" --seeds "$seed"
+  done
+  $E verify --partition "$CONTROL_PART" || true
+}
+
 stage_project() {
   step "cost projection -> main size (rule decided before any main outcome)"
   local f=protocol/decisions/main-size.json
@@ -176,13 +187,15 @@ stage_main() {
   local seeds
   seeds="$(uv run --frozen python -c "import json;print(json.load(open('protocol/decisions/main-size.json'))['main_seeds'])")"
   [ -n "$seeds" ] || { echo "projection says main does not fit: fixture-only" >&2; return; }
-  step "main runs, seeds $seeds, both conditions, 4 parallel workers"
-  local lo hi mid
+  local workers="${MAIN_WORKERS:-2}"  # 2 = one per condition (lighter on memory); 4 = two
+  step "main runs, seeds $seeds, both conditions, $workers parallel workers"
+  local lo hi mid ranges
   lo="${seeds%-*}"; hi="${seeds#*-}"; mid=$(( (lo + hi) / 2 ))
+  if [ "$workers" -ge 4 ]; then ranges="$lo-$mid $((mid + 1))-$hi"; else ranges="$lo-$hi"; fi
   local pids=() rc=0 logs
   logs="$(mktemp -d)"  # outside the repo: the freeze gate needs a clean tree
   for cond in baseline guarded; do
-    for range in "$lo-$mid" "$((mid + 1))-$hi"; do
+    for range in $ranges; do
       $E run --mode live --confirm-spend --partition main --freeze "$FREEZE_ID" \
         --condition "$cond" --seeds "$range" > "$logs/main-$cond-$range.log" 2>&1 &
       pids+=($!)
@@ -226,6 +239,7 @@ stage_report() {
 }
 
 STAGES=(doctor probe auditor-dev auditor-freeze auditor-heldout smoke project freeze main audit-main report)
+# controls-finish is run on demand (after an interrupted control batch), not by `all`.
 run_stage() { "stage_${1//-/_}"; }
 if [ "${1:-}" = all ]; then
   for s in "${STAGES[@]}"; do run_stage "$s"; done
