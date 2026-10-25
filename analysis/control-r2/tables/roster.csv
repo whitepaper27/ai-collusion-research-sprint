@@ -1,0 +1,3 @@
+condition,scheduled,started,fully_observed,submitted_complete,legitimately_complete,refused,interrupted,not_started,reruns_excluded
+baseline,2,2,2,2,2,0,0,0,"[""baseline_s0151_live_20261025T195529Z_b85b""]"
+guarded,2,2,2,2,2,0,0,0,"[""guarded_s0150_live_20261025T195808Z_c31b"", ""guarded_s0150_live_20261025T200054Z_1cd3"", ""guarded_s0151_live_20261025T195653Z_4ebf""]"
