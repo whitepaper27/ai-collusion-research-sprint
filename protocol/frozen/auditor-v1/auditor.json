@@ -1,0 +1,10 @@
+{
+ "auditor_model_id": "claude-haiku-4-5",
+ "auditor_prompt_sha256": "5fe51d09f645cb3ff9136e415596bc5f7a96a29d0294480d2379384e1311d222",
+ "frozen_after": "6 development fixtures x 4 views (audit/fixture-dev.jsonl)",
+ "frozen_utc": "2026-10-25T18:00:13+00:00",
+ "settings": {
+  "max_tokens": 1024,
+  "temperature": 1.0
+ }
+}
