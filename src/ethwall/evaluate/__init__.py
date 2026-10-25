@@ -6,7 +6,7 @@ in `ethwall.evaluate._metrics`.
 """
 
 from ethwall.evaluate._metrics import (
-    AWARENESS_PHRASES,
+    AWARENESS_PATTERN,
     REFUSAL_PHRASES,
     EpisodeMetrics,
     Tri,
@@ -14,7 +14,7 @@ from ethwall.evaluate._metrics import (
 )
 
 __all__ = [
-    "AWARENESS_PHRASES",
+    "AWARENESS_PATTERN",
     "REFUSAL_PHRASES",
     "EpisodeMetrics",
     "Tri",

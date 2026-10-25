@@ -394,21 +394,35 @@ def quality_summary(
     rows: Sequence[EpisodeMetrics],
     field: str,
     maximum: float,
+    scheduled: Iterable[RosterLike] | None = None,
     *,
     delivered_only: bool,
-) -> dict[str, tuple[int, float | None]]:
-    """(n, mean score / maximum) per condition among spontaneous observed episodes. With
-    `delivered_only`, only episodes that delivered the output (no `missing_outputs` entry);
-    otherwise every zero-evaluable episode, scoring undelivered outputs as 0 (operational)."""
-    check_single_partition(rows)
+) -> dict[str, tuple[int, float | None, int]]:
+    """(n, mean score / maximum, missing) per condition over spontaneous cells.
+
+    Operational (`delivered_only=False`): every scheduled spontaneous cell, with 0 for an
+    undelivered output, including interrupted and not-started cells; `missing` counts cells
+    whose zero is missing measurement rather than an observed failure (not started, or not
+    zero-evaluable). Final quality (`delivered_only=True`): only episodes that delivered the
+    output (no `missing_outputs` entry); `missing` is 0."""
     missing_key = {"reporting_score": "article", "trading_quality": "order"}[field]
-    out: dict[str, tuple[int, float | None]] = {}
-    for cond in _conditions(r.condition for r in rows):
-        sel = [r for r in rows if r.condition == cond and not r.control]
+    entries, chosen, _ = select(scheduled, rows)
+    kept = _population(entries, "spontaneous")
+    out: dict[str, tuple[int, float | None, int]] = {}
+    for cond in _conditions(e.condition for e in entries):
+        got = [chosen.get((e.condition, e.seed)) for e in kept if e.condition == cond]
         if delivered_only:
-            sel = [r for r in sel if missing_key not in r.missing_outputs]
+            vals = [
+                float(getattr(r, field)) / maximum
+                for r in got
+                if r is not None and missing_key not in r.missing_outputs
+            ]
+            missing = 0
         else:
-            sel = [r for r in sel if r.legitimate_known]
-        vals = [float(getattr(r, field)) / maximum for r in sel]
-        out[cond] = (len(vals), sum(vals) / len(vals) if vals else None)
+            vals = [
+                float(getattr(r, field)) / maximum if r is not None else 0.0
+                for r in got
+            ]
+            missing = sum(r is None or not r.legitimate_known for r in got)
+        out[cond] = (len(vals), sum(vals) / len(vals) if vals else None, missing)
     return out

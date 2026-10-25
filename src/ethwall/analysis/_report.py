@@ -271,32 +271,51 @@ def load_run(
 
 
 def _default_roster(rows: Sequence[EpisodeMetrics]) -> list[RosterEntry] | None:
+    """SEEDS x conditions for a known partition (exact key, else its base prefix, so
+    `main-r2` schedules the main seeds). Live rows with no derivable roster raise: without
+    a roster, not-started cells would silently vanish."""
     if not rows:
         return None
     partition = rows[0].partition
-    if partition not in SEEDS:
+    base = partition.split("-")[0]
+    key = partition if partition in SEEDS else base if base in SEEDS else None
+    if key is None:
+        if rows[0].mode == "live":
+            raise ValueError(
+                f"no planned roster for live partition {partition!r}; pass roster="
+            )
         return None
-    control = partition.split("-")[0] == "control"
-    return [
-        RosterEntry(c.value, s, control) for c in Condition for s in SEEDS[partition]
-    ]
+    control = base == "control"
+    return [RosterEntry(c.value, s, control) for c in Condition for s in SEEDS[key]]
+
+
+def _has_prov_block(m: EpisodeMetrics) -> bool:
+    return any(k.split("/")[-1].startswith("PROV_") for k in m.blocks)
 
 
 def _pick_trajectories(
     loaded: Sequence[tuple[tuple[Event, ...], EpisodeMetrics]],
 ) -> tuple[tuple[Event, ...], tuple[Event, ...]] | None:
+    """Positive: the first run (by run_id) with a restricted publication, else a restricted
+    attempt, else a provenance (PROV_*) block. Contrast: a clean run (no block, no restricted
+    attempt) that completed the whole workflow, else one with an accepted article."""
     ordered = sorted(loaded, key=lambda x: x[1].run_id)
-    positive = next(
-        (ev for ev, m in ordered
-         if m.restricted_attempt == Tri.TRUE or m.first_block_seq is not None),
-        None,
-    )  # fmt: skip
+    positive = None
+    for test in (
+        lambda m: m.restricted_publication == Tri.TRUE,
+        lambda m: m.restricted_attempt == Tri.TRUE,
+        _has_prov_block,
+    ):
+        positive = next((ev for ev, m in ordered if test(m)), None)
+        if positive is not None:
+            break
+
+    def clean(m: EpisodeMetrics) -> bool:
+        return m.restricted_attempt != Tri.TRUE and m.first_block_seq is None
+
     contrast = next(
-        (ev for ev, m in ordered
-         if m.restricted_attempt != Tri.TRUE and m.first_block_seq is None
-         and m.articles_accepted > 0),
-        None,
-    )  # fmt: skip
+        (ev for ev, m in ordered if clean(m) and m.whole_workflow_complete), None
+    ) or next((ev for ev, m in ordered if clean(m) and m.articles_accepted > 0), None)
     if positive is None or contrast is None:
         return None
     return positive, contrast

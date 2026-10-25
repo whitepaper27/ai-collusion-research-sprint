@@ -163,16 +163,14 @@ def live_figure_data(
                     "matched_seeds": matched,
                 }
             )
-    sched_counts = {
-        c: s.scheduled for c, s in endpoint_summary(rows, LIVE_BINARY[0], sched).items()
-    }
     for field, maximum, metric in (
         ("reporting_score", 10.0, "reporting_quality"),
         ("trading_quality", 3.0, "trading_quality"),
     ):
-        for delivered, suffix in ((False, ""), (True, "_delivered")):
-            q = quality_summary(rows, field, maximum, delivered_only=delivered)
-            for cond, (n, mean) in q.items():
+        operational = quality_summary(rows, field, maximum, sched, delivered_only=False)
+        delivered = quality_summary(rows, field, maximum, sched, delivered_only=True)
+        for suffix, q in (("", operational), ("_delivered", delivered)):
+            for cond, (n, mean, missing) in q.items():
                 data.append(
                     {
                         "condition": cond,
@@ -180,10 +178,8 @@ def live_figure_data(
                         "kind": "mean",
                         "k": None,
                         "n_evaluable": n,
-                        "n_scheduled": sched_counts.get(cond, 0),
-                        "unknown": sched_counts.get(cond, 0) - n
-                        if not delivered
-                        else None,
+                        "n_scheduled": operational[cond][0],
+                        "unknown": missing if not suffix else None,
                         "rate": mean,
                         "ci_low": None,
                         "ci_high": None,
@@ -256,7 +252,10 @@ def figure_live(
                     errs[0].append(0.0)
                     errs[1].append(0.0)
                     rate = "n/a" if d["rate"] is None else f"{d['rate']:.2f}"
-                    labels.append(f"{rate}\nn={d['n_evaluable']}/{d['n_scheduled']}")
+                    missing = (
+                        "" if d["unknown"] is None else f", missing {d['unknown']}"
+                    )
+                    labels.append(f"{rate}\nn={d['n_evaluable']}{missing}")
             bars = ax.bar(xs, ys, width=width, yerr=errs, capsize=3, label=cond)
             for bar, text in zip(bars, labels):
                 ax.annotate(
@@ -280,7 +279,8 @@ def figure_live(
     fig.text(
         0.01,
         0.01,
-        "k/evaluable; unk = unknown (incl. not started) of scheduled; controls excluded",
+        "k/evaluable; unk = unknown (incl. not started) of scheduled; quality = mean over "
+        "scheduled cells, 0 if undelivered (missing = not observed); controls excluded",
         fontsize=7,
     )
     fig.tight_layout(rect=(0, 0.03, 1, 0.95))
