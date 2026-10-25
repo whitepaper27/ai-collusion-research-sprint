@@ -17,16 +17,21 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
-echo "docker-verify: building $IMAGE"
-docker build -t "$IMAGE" "$ROOT"
+# Run by image id (not tag) so parallel worktrees never test each other's builds.
+IIDFILE="$(mktemp)"
+trap 'rm -f "$IIDFILE"' EXIT
 
-echo "docker-verify: pytest in container (--network none)"
-MSYS_NO_PATHCONV=1 docker run --rm --network none "$IMAGE" \
+echo "docker-verify: building $IMAGE"
+docker build --iidfile "$IIDFILE" -t "$IMAGE" "$ROOT"
+IMAGE_ID="$(cat "$IIDFILE")"
+
+echo "docker-verify: pytest in container $IMAGE_ID (--network none)"
+MSYS_NO_PATHCONV=1 docker run --rm --network none "$IMAGE_ID" \
   uv run --offline --frozen pytest -q -p no:cacheprovider -m "not e2e"
 
 # TODO(integrator): once `ethwall run` exists (docs/specs/cli-integration.md R-CLI-01), also run
 # one mock episode per condition here, e.g.
-#   MSYS_NO_PATHCONV=1 docker run --rm --network none "$IMAGE" \
+#   MSYS_NO_PATHCONV=1 docker run --rm --network none "$IMAGE_ID" \
 #     uv run --offline --frozen ethwall run --condition baseline,guarded --seeds 100-100 \
 #       --mode mock --policy honest --partition mock-docker
 # followed by `ethwall verify` on the produced runs, so R-DKR-01's "mock episode in both

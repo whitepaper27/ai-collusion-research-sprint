@@ -13,13 +13,17 @@ from pathlib import Path
 import pytest
 
 from ethwall.contract import (
+    CLEARANCE_BY_ROLE,
     DECISIONS_PER_EPISODE,
+    DUTY_REPORT_ROLES,
     MAX_ACTIONS_PER_EPISODE,
     MAX_TOOL_CALLS_PER_RESPONSE,
     MAX_TRANSPORT_RETRIES,
+    READS_BY_ROLE,
     SCHEMA_VERSION,
     SEEDS,
     TOOL_SPECS,
+    TOOLS_BY_ROLE,
     WALL_CLOCK_SECONDS,
     Condition,
     EpisodeConfig,
@@ -118,6 +122,9 @@ def test_manifest_fields_and_hashes(repo):
     h = m["hashes"]
     assert h["prompts"] == "p" * 64
     assert h["tool_schemas"] == sha256_hex(canonical_json(TOOL_SPECS))
+    policy = {"reads_by_role": READS_BY_ROLE, "tools_by_role": TOOLS_BY_ROLE,
+              "clearance_by_role": CLEARANCE_BY_ROLE, "duty_report_roles": DUTY_REPORT_ROLES}  # fmt: skip
+    assert h["policy_data"] == sha256_hex(canonical_json(policy))  # entitlement tables
     for k in ("world_generator", "enforcement", "services"):
         assert isinstance(h[k], str) and len(h[k]) == 64
     assert h["analysis_config"] is None  # no analysis/evaluate package in this repo yet
@@ -177,6 +184,7 @@ def test_create_freeze_writes_hashes_seeds_caps_and_model_ids(repo):
         "prompts_dir",
         "world_generator",
         "enforcement",
+        "policy_data",
         "services",
         "tool_schemas",
         "analysis_config",

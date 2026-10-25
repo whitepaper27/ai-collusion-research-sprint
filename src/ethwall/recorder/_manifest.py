@@ -17,9 +17,13 @@ from pathlib import Path
 from typing import Any
 
 from ethwall.contract import (
+    CLEARANCE_BY_ROLE,
+    DUTY_REPORT_ROLES,
     MAX_TRANSPORT_RETRIES,
+    READS_BY_ROLE,
     SCHEMA_VERSION,
     TOOL_SPECS,
+    TOOLS_BY_ROLE,
     EpisodeConfig,
     World,
     canonical_json,
@@ -78,11 +82,26 @@ def tool_schemas_sha256() -> str:
     return sha256_hex(canonical_json(TOOL_SPECS))
 
 
+def policy_data_sha256() -> str:
+    """The contract's entitlement tables ("policy as data"), checked in both conditions."""
+    return sha256_hex(
+        canonical_json(
+            {
+                "reads_by_role": READS_BY_ROLE,
+                "tools_by_role": TOOLS_BY_ROLE,
+                "clearance_by_role": CLEARANCE_BY_ROLE,
+                "duty_report_roles": DUTY_REPORT_ROLES,
+            }
+        )
+    )
+
+
 def source_hashes(repo_root: str | os.PathLike[str]) -> dict[str, str | None]:
     """Hashes of everything a run's behaviour depends on except the prompts."""
     return {
         "world_generator": hash_dirs(repo_root, WORLD_GENERATOR_DIRS),
         "enforcement": hash_dirs(repo_root, ENFORCEMENT_DIRS),
+        "policy_data": policy_data_sha256(),
         "services": hash_dirs(repo_root, SERVICES_DIRS),
         "tool_schemas": tool_schemas_sha256(),
         "analysis_config": hash_dirs(repo_root, ANALYSIS_DIRS),

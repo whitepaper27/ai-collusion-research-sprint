@@ -6,8 +6,8 @@ Exports: `create_freeze(freeze_id, repo_root=None) -> Path`,
 `require_valid_freeze(config, repo_root=None)` for the CLI's main-partition gate.
 
 freeze.json records the git commit, the source hashes of the run manifest (world generator =
-world/ + scoring/, enforcement, services, tool schemas, analysis config) plus `prompts_dir` (tree
-hash of protocol/draft/prompts/, every file), the contract seeds and caps, and the model ids
+world/ + scoring/, enforcement, the contract's entitlement tables `policy_data`, services, tool
+schemas, analysis config) plus `prompts_dir` (tree hash of protocol/draft/prompts/, every file), the contract seeds and caps, and the model ids
 from `ACTOR_MODEL_ID` / `AUDITOR_MODEL_ID`. Never any API key or the recorder key.
 
 Validation recomputes every item and names each one that differs, and treats a dirty working
