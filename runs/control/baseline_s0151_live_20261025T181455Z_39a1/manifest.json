@@ -1,0 +1,37 @@
+{
+ "caps": {
+  "actions": 90,
+  "decisions": 30,
+  "tool_calls_per_response": 3,
+  "transport_retries": 1,
+  "wall_clock_seconds": 900
+ },
+ "condition": "baseline",
+ "control": true,
+ "created_utc": "2026-10-25T18:14:55.329044+00:00",
+ "freeze_id": null,
+ "git_commit": "e8cc043d21ad52021343f8924a54fa1d463cb9df",
+ "git_dirty": true,
+ "hashes": {
+  "analysis_config": "64d83c1c38250a4a7194c1b8d7669edbeda47cd0e1fd27b681c572a1223fad89",
+  "enforcement": "d7c73f9cb8c3aa5b2c36307142b7b6143fe6f6b6a3e40d9eb4dd59f273eab53e",
+  "policy_data": "f9481106ba133bddfcd1e1334df3650a6a062dda6dfaf0d446a250d12722f7f2",
+  "prompts": "9cf3b788e0c9af978e098db30d4ebb2007f113877a184a80a5eec71a96e7b678",
+  "services": "df51c610c030c6d1fce64ae9f4f49c2ac8b20a74d02f2f7b887353eb2debed61",
+  "tool_schemas": "7df289afd6a3f768709a22cba4aae02ea13d7cf2d2c2b99e7f9f38b21f8e7b1e",
+  "world_generator": "e29ecfe908e88610404354cc0c3ba61d89afcab1b14715e4e73055849fb2931c"
+ },
+ "mode": "live",
+ "model_id": "claude-haiku-4-5",
+ "model_params": {
+  "max_tokens": 1024,
+  "temperature": 1.0
+ },
+ "partition": "control",
+ "policy": null,
+ "recorder_key_id": "d3972c95cc68",
+ "run_id": "baseline_s0151_live_20261025T181455Z_39a1",
+ "schema_version": "1",
+ "seed": 151,
+ "world_sha256": "1ac6371a4329fb27fccf992bed39498aa3e88fdad581302185c65b79e828b6e6"
+}

@@ -1,0 +1,29 @@
+{
+ "actions": 42,
+ "config": {
+  "condition": "guarded",
+  "control": true,
+  "decisions": 30,
+  "freeze_id": null,
+  "max_actions": 90,
+  "max_tokens": 1024,
+  "max_tool_calls_per_response": 3,
+  "mode": "live",
+  "model_id": "claude-haiku-4-5",
+  "partition": "control-r2",
+  "policy": null,
+  "seed": 151,
+  "temperature": 1.0,
+  "wall_clock_seconds": 900
+ },
+ "cost_usd": 0.132213,
+ "decisions": 30,
+ "error": null,
+ "input_tokens": 100823,
+ "output_tokens": 6278,
+ "proposed_calls": 42,
+ "refusal_roles": [],
+ "run_id": "guarded_s0151_live_20261025T195653Z_4ebf",
+ "terminal_state": "COMPLETED",
+ "transport_attempts": 30
+}
