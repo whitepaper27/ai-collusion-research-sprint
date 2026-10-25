@@ -13,3 +13,6 @@ __pycache__/
 # agent kit
 .verify-logs/
 .claude/settings.local.json
+
+# agent worktrees
+.worktrees/
