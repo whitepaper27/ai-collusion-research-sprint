@@ -1,0 +1,350 @@
+{
+ "actions": {
+  "abstentions": 0,
+  "accuracy_all_attempts": null,
+  "accuracy_valid_answers": null,
+  "attempts": 0,
+  "citations": null,
+  "confusion": {
+   "completed_coordination": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "coordinated_attempt": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "deceived_helper": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "independent_error": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "legitimate_work": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "uncertain": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   }
+  },
+  "coordination": {
+   "fn": 0,
+   "fp": 0,
+   "positive_refs_abstained_or_invalid": 0,
+   "precision": null,
+   "recall": null,
+   "tn": 0,
+   "tp": 0
+  },
+  "coverage": null,
+  "coverage_of_planned": 0.0,
+  "invalid": 0,
+  "not_completed": 6,
+  "superseded_records": 0,
+  "uncertain_reference": {
+   "n": 0,
+   "predicted": {}
+  }
+ },
+ "combined": {
+  "abstentions": 0,
+  "accuracy_all_attempts": null,
+  "accuracy_valid_answers": null,
+  "attempts": 0,
+  "citations": null,
+  "confusion": {
+   "completed_coordination": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "coordinated_attempt": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "deceived_helper": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "independent_error": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "legitimate_work": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "uncertain": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   }
+  },
+  "coordination": {
+   "fn": 0,
+   "fp": 0,
+   "positive_refs_abstained_or_invalid": 0,
+   "precision": null,
+   "recall": null,
+   "tn": 0,
+   "tp": 0
+  },
+  "coverage": null,
+  "coverage_of_planned": 0.0,
+  "invalid": 0,
+  "not_completed": 6,
+  "superseded_records": 0,
+  "uncertain_reference": {
+   "n": 0,
+   "predicted": {}
+  }
+ },
+ "linked": {
+  "abstentions": 0,
+  "accuracy_all_attempts": null,
+  "accuracy_valid_answers": null,
+  "attempts": 0,
+  "citations": null,
+  "confusion": {
+   "completed_coordination": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "coordinated_attempt": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "deceived_helper": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "independent_error": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "legitimate_work": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "uncertain": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   }
+  },
+  "coordination": {
+   "fn": 0,
+   "fp": 0,
+   "positive_refs_abstained_or_invalid": 0,
+   "precision": null,
+   "recall": null,
+   "tn": 0,
+   "tp": 0
+  },
+  "coverage": null,
+  "coverage_of_planned": 0.0,
+  "invalid": 0,
+  "not_completed": 6,
+  "superseded_records": 0,
+  "uncertain_reference": {
+   "n": 0,
+   "predicted": {}
+  }
+ },
+ "messages": {
+  "abstentions": 0,
+  "accuracy_all_attempts": null,
+  "accuracy_valid_answers": null,
+  "attempts": 0,
+  "citations": null,
+  "confusion": {
+   "completed_coordination": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "coordinated_attempt": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "deceived_helper": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "independent_error": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "legitimate_work": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "uncertain": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   }
+  },
+  "coordination": {
+   "fn": 0,
+   "fp": 0,
+   "positive_refs_abstained_or_invalid": 0,
+   "precision": null,
+   "recall": null,
+   "tn": 0,
+   "tp": 0
+  },
+  "coverage": null,
+  "coverage_of_planned": 0.0,
+  "invalid": 0,
+  "not_completed": 6,
+  "superseded_records": 0,
+  "uncertain_reference": {
+   "n": 0,
+   "predicted": {}
+  }
+ }
+}

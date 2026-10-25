@@ -410,7 +410,12 @@ def audit_report(argv: list[str]) -> int:
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "audit_metrics.json").write_text(
-        json.dumps(metrics_by_view(preds, refs), sort_keys=True, indent=1, default=str),
+        json.dumps(
+            metrics_by_view(preds, refs, visible_ids=_visible_ids(Path(a.exports))),
+            sort_keys=True,
+            indent=1,
+            default=str,
+        ),
         encoding="utf-8",
     )
     stamp = a.stamp or (
@@ -419,6 +424,23 @@ def audit_report(argv: list[str]) -> int:
     fig = figure_audit(audit_rows(preds, refs, a.source), out / "figures", stamp=stamp)
     print(f"audit metrics + {fig.png.name} -> {out}")
     return 0
+
+
+def _visible_ids(exports: Path) -> dict[tuple[str, str], frozenset[str]]:
+    """{(trajectory id, view): ids visible in that export}, for R-AUD-10 citation validity."""
+    from ethwall.audit.views import visible_ids
+
+    out: dict[tuple[str, str], frozenset[str]] = {}
+    for d in sorted(
+        x for x in exports.iterdir() if x.is_dir() and not x.name.startswith("_")
+    ):
+        for view in VIEWS:
+            f = d / f"{view}.json"
+            if f.exists():
+                out[(d.name, view)] = visible_ids(
+                    json.loads(f.read_text(encoding="utf-8"))
+                )
+    return out
 
 
 def cmd_audit(argv: list[str]) -> int:
