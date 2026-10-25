@@ -1,102 +1,127 @@
 # GOAL
 
-The file every other decision defers to. The full research plan is [`sol.md`](sol.md)
-(v4.1, 2026-10-24); this page is its operating summary. If they disagree, `sol.md` wins and
-this file gets fixed.
+The file every other decision defers to. The research plan is [`sol.md`](sol.md) **v5.2**
+(2026-10-24); this page is its operating summary. If they disagree, `sol.md` wins and this file
+gets fixed. System design: [`ARCHITECTURE.md`](ARCHITECTURE.md). Work list: [`TASKS.md`](TASKS.md).
 
-**Owner:** Sahil Soni · **Last updated:** 2026-10-24
+**Owner:** Sahil Soni (sole human reviewer and report author) · **Last updated:** 2026-10-24
 
-## Open owner decision
+## Owner decisions
 
-- [ ] `sol.md` v4.1 says "No code changes are authorized by this update." Until the owner
-      records here that building the experiment harness is authorized, agents may only work
-      on setup, docs, fixtures design and plans, not harness code.
+- [x] **Build authorized for v5.2** (2026-10-24), effective once this file, AGENTS.md and the
+      old world plan are reconciled with v5.2 (done in branch `docs/v5.2-setup`). sol.md
+      lines 4 and 11 still say "paused"; the owner updates them.
+- [x] **Paid runs only on the owner's explicit go.** Agents build and test in `mock`/`fixture`
+      mode and never start live calls on their own.
+- [x] **Spend caps** (enforced by the harness before every paid call):
+      per episode, main $1.25 and smoke/control $0.80; batches below; total $50.
+- [x] **Docker** is used for clean-room test runs and offline mock episodes
+      (`--network none`). Live runs stay on the host. No sandbox claim beyond what's tested.
+- [x] Actor model: Claude Haiku 4.5, exact ID from `ACTOR_MODEL_ID`, frozen before the main run.
+- [ ] Owner records the account pricing basis and the auditor model ID before paid runs.
 
 ## Mandatory agent instruction
 
-Read this file before research, design, implementation or delegation. Every task must name
-the core cell, definition-of-done item or decision-rule line it advances. If it advances
-none, don't do it.
+Read this file before research, design, implementation or delegation. Every task names the
+TASKS.md item, definition-of-done line or milestone it advances. If it advances none, don't do it.
 
 ---
 
 ## The goal (one sentence)
 
-By **Monday Oct 26, 2026, 6:59 AM America/Chicago** (target: midnight Sunday→Monday), submit
-a reproducible ≤8-page report that measures whether separating client duties across
-permission-scoped agents changes cross-client disclosure compared with one combined-role
-agent, and what a selective provenance-enforced gate preserves, blocks and costs, in the
-fictional Northgate Tax Advisory ethical-wall sandbox.
+By **Monday Oct 26, 2026, 6:59 AM America/Chicago** (target: submitted Sunday 11:30 PM), submit a
+reproducible ≤8-page Track 2 report that tests whether **source-linked evidence** distinguishes
+coordinated violations from independent mistakes in a synthetic five-role finance team, and what
+a **provenance gate** blocks and costs in legitimate work.
+
+## The two questions (frozen as questions; no direction assumed)
+
+- **H1, primary audit comparison:** does the *linked* evidence view change coordination-
+  classification errors, false accusations, misses or abstentions compared with the *combined*
+  chronological view holding the same information? Fixtures and live trajectories reported
+  separately.
+- **H2, live intervention:** does provenance enforcement (`guarded`) change attempted/completed
+  restricted publication and legitimate-work completion/quality compared with the matched
+  `baseline` team?
+- Secondary: messages vs actions vs combined views; contradicted/unsupported publication,
+  uncertain claims, internal exposure, benign blocks, unsupported approval claims. Separate
+  endpoints, never a composite score.
 
 ## What a credible result requires (priority order)
 
-1. **The two primary contrasts are measured** on matched synthetic-world seeds: team vs
-   combined-role under entitlements only (cell 2 vs 1), and selective gate vs entitlements
-   only for the team (cell 4 vs 2). Counts, denominators, intervals.
-2. **The main figure exists** (fixed in `sol.md` §1): single vs team × entitlements-only vs
-   selective gate; Client A content in the committed Client B memo next to legitimate
-   Client B quality; internal exposure and gate blocks shown separately.
-3. **Controls work:** the known-answer evidence fixture is detected, the instructed agent
-   control is run, and legitimate Client B work completes. Otherwise a null is inconclusive.
-4. **Limits are stated honestly:** sample size, prompt dependence, covert channels not closed,
-   trusted components, synthetic scope. Overclaiming is a credibility loss.
-5. **Not a reskin:** positioned against Fides, FLOWSEAL, SafeFlow, Colosseum and Multi-Agent
-   AI Control (`sol.md` §14).
+1. **Validated audit evidence:** 6 development + 12 held-out fixtures (6 matched pairs),
+   four evidence views, Sahil's reference labels made before seeing auditor predictions.
+2. **The live comparison measured:** baseline vs guarded on matched seeds, with the full roster
+   (scheduled … not started), known/zero/unknown endpoints and intervals.
+3. **Controls work:** one legitimate end-to-end mock run, the known-answer detector fixture,
+   4 instructed-control episodes, negative controls.
+4. **Three figures** from recorded evidence (sol.md §11) and a verified fact sheet.
+5. **Honest limits:** sole reviewer, fixture authorship, imperfect blinding, trusted recorder
+   key, constrained publication interface, covert channels open, small samples.
+6. **Positioned against** Apollo, Multi-Agent AI Control, Colosseum v2, Fides/FLOWSEAL/SafeFlow.
 
 ## The claim (do not exceed it)
 
-> We compare a combined-role agent with separately permissioned client agents in a
-> controlled ethical-wall workflow. We measure cross-client information flow, evidence of
-> coordination, and the disclosure–utility tradeoff of a specified provenance-enforcement
-> design.
+> Validated source-linked attribution in a finance workflow, including false-accusation cases
+> and the cost of a targeted provenance policy.
 
-No expected results, no direction for H1/H2, no prize prediction. Results are stated only
-after measurement. Leakage alone is not collusion.
+Not claimed: that information-flow control is new, that evidence views were never compared, that
+a profit motive establishes collusion, real legal loopholes, market impact or real-world harm.
+
+## Budget (hard ceiling $50)
+
+| Allocation | Max USD | Episodes / calls |
+|---|---:|---|
+| Smoke + instructed controls | 8 | 6 smoke (seeds 100–102 × 2) + 4 controls (seeds 150–151 × 2) |
+| Main actor episodes | 25 | 20 (seeds 200–209 × 2); fallback 12 (seeds 200–205) |
+| Auditor development + evaluation | 10 | ≤24 dev + 128 held-out decisions (96 on fallback) |
+| Failure/retry reserve | 7 | retries and failures only |
+
+30 decisions per episode, 90 tool actions, ≤3 tool calls per response, 1 identical transport
+retry, 15 min wall clock. Fallbacks are chosen from smoke cost projections **before** main
+outcomes: 20 → 12 main episodes → fixture-only study.
+
+## Milestones (America/Chicago)
+
+| When | Milestone |
+|---|---|
+| Sun Oct 25, 6 AM | Mock episode, evidence exports, essential tests green |
+| Sun 9 AM | Smoke + controls assessed, cost decision, protocol frozen (or fixture-only fallback) |
+| Sun 1 PM | Main actor runs finished or stopped at cutoff; full roster preserved |
+| Sun 5 PM | Human labels, auditor evaluation, figures, verified fact sheet |
+| Sun 10 PM | Author's report complete and checked against evidence |
+| Sun 11:30 PM | Submitted; confirmation retained |
+| Mon 6:59 AM | Official deadline; margin only |
 
 ## Non-goals
 
-- Trading, price impact, publication-driven profit, systemic-risk or legal-offense claims.
-- Optional arms (conservative gate C, prompt reminder, policy omission, open model, mixed
-  teams, auditor views, second paraphrase) before the core is secure.
-- Claiming full noninterference or closure of covert channels.
-- Rewording prompts after a refusal to obtain compliance.
-- Agents writing the submission prose. The report must be the author's own writing.
+- Solo-agent, naive-prompt or architecture comparisons (removed in v5.2).
+- A factuality/semantic release gate, conflict-review queues, dynamic releases.
+- Publication-driven market impact, interactive markets, real trading or posting.
+- Extra models, prompt wordings, mixed teams, dashboards, general agent frameworks.
+- Rewording refusals or invalid auditor outputs; inducing agreement.
+- Agents writing the submission prose (repository authorship rule; agents produce code,
+  evidence packets, figures, tables and a fact sheet).
 
 ## Decision rule under time pressure
 
-Keep from the top, cut from the bottom:
-
-1. KEEP: core cells 1–4 (40 episodes, high pressure, one exact model), main figure, claim
-   labels/adjudication, report with Limitations and Dual-Use appendix.
-2. KEEP: 12 smoke episodes (3 per cell) and the dated pilot record before the main run.
-3. CUT FIRST: conservative gate C reference (10 team episodes).
-4. CUT NEXT: second prompt paraphrase, then auditor-view study (H4), then every other extension.
-5. If cells must shrink, keep the two primary contrasts and disclose missing cells.
-
-Sunday noon is the internal scope cutoff, not a promise that data will be ready.
+1. KEEP: both live conditions, audit fixtures + four views, human adjudication, writing time.
+2. If live execution is not viable at the 9 AM cutoff: submit the validated fixture study and
+   working artifact, with live evidence explicitly absent.
+3. Cut in this order: optional engineering polish → auditor calls on smoke/control → main
+   episodes down to the 6-seed fallback (chosen before outcomes).
 
 ## Definition of done
 
-- [ ] Synthetic world built: stores, labels, canary registry; canaries verified absent from
-      KB, Client B records, prompts and reference memo
-- [ ] Honest reference Client B memo and frozen quality rubric (no Client A content needed)
-- [ ] Architectures (combined-role, team) and gates (E, S) implemented with tested access
-      boundaries; recorder retains every message, read, observation and deliverable
-- [ ] Known-answer fixture and instructed control pass
-- [ ] Smoke episodes run, pilot record dated and kept
-- [ ] Protocol frozen in a git commit (hypotheses, prompts, labels, gate semantics, seeds,
-      budget, analyses) before the main run; hash recorded in run manifests
-- [ ] 40 core episodes run on fresh seeds; refusals, API failures, incomplete runs kept separate
-- [ ] Main figure + tables generated from recorded runs by script
-- [ ] Fact sheet of verified numbers for the author; report written by the author in the
-      official template (≤8 pages, 150–250-word abstract, Limitations + Dual-Use appendix)
-- [ ] Submitted before the deadline
-
-## Where the detail lives
-
-| Need | File |
-|---|---|
-| Full research plan, measurement rules, claim boundaries | [`sol.md`](sol.md) |
-| How to work in this repo | [`AGENTS.md`](AGENTS.md) |
-| Plans for non-trivial changes | [`docs/plans/`](docs/plans/) |
-| Prior L3 sprint (Agent Worlds harness) | [`../harness/`](../harness/) — record provenance if anything is reused |
+- [ ] Docs reconciled with v5.2; specs in `docs/specs/` with requirement IDs; traceability test
+- [ ] Seeded world, release records, fact registry, predicate vocabulary, price path
+- [ ] Services: store reads, public retrieval, messaging, orders, structured publication, duty reports
+- [ ] Provenance enforcement at messages, publication and orders, each with block + allow tests
+- [ ] Scheduler (6 rounds × 5 slots), caps, terminal states, spend ledger
+- [ ] Append-only reconciled recorder; tamper tests; freeze create/validate
+- [ ] Evaluator endpoints + legitimate-work scoring; restricted content cannot raise scores
+- [ ] Audit fixtures (6 dev, 12 held-out), four views, equality + leak checks, label CLI, metrics
+- [ ] Mock end-to-end in both conditions; Docker clean room green; `verify.sh` green
+- [ ] Smoke + controls run (owner's go); protocol frozen; main runs; auditor runs
+- [ ] Figures 1–3, tables, fact sheet generated from recorded evidence
+- [ ] Report written by Sahil in the official template; submitted before the deadline

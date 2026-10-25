@@ -1,9 +1,12 @@
 @AGENTS.md
 @GOAL.md
 
-The full research plan is `sol.md` (~29 KB, not auto-loaded). Read the sections relevant to
-your task before designing or changing anything in the experiment: §2 world, §3 architectures,
-§5–6 bus and gates, §7 outcomes, §8 sample plan, §11–12 freeze and evidence integrity.
+The full research plan is `sol.md` v5.2 (not auto-loaded). Read the sections relevant to your
+task before designing or changing anything: §2 roles and entitlements, §3 sources and release
+records, §4 conditions and partitions, §5 schedule and exposure, §6 evidence and scoring, §7
+provenance enforcement, §8 trading environment, §9 caps, spend and terminal states, §10 auditor
+study and denominators, §11 acceptance checks and milestones. System design is in
+`ARCHITECTURE.md`, the work list in `TASKS.md`, module requirements in `docs/specs/`.
 
 ## Claude Code specifics
 
@@ -18,10 +21,13 @@ your task before designing or changing anything in the experiment: §2 world, §
   keep going. If you're genuinely stuck after a few attempts, say so plainly.
 - **One task per session.** When a task is done, the human will `/clear` or start a new
   worktree. Don't carry unrelated work into the same branch.
-- **Deadline mode.** The sprint ends Mon Oct 26, 6:59 AM CT. Before starting anything, check
-  it against GOAL.md's decision rule. If a task belongs to a cut tier, say so and stop.
-- **Never spend model credits without being asked.** Live-model episodes (`mode: live`) cost
-  money and become evidence. Build and test with `mock`/`fixture` mode; the human starts live runs.
+- **Deadline mode.** Milestones are in GOAL.md (first: Sun 6 AM working mock episode). Before
+  starting anything, check it against GOAL.md's decision rule. If it's cut-tier, say so and stop.
+- **Never spend model credits without the owner's explicit go.** Live episodes and auditor calls
+  cost money against a $50 ceiling and become evidence. Build and test in `mock`/`fixture` mode.
+- **Spec-driven loop.** Read the module spec, write failing tests citing its `R-XXX-NN` IDs,
+  implement, run `./scripts/verify.sh`, fix the cause on red (never weaken a test). After 6 red
+  iterations stop with a BLOCKED report.
 
 ## Skills in this repo
 
