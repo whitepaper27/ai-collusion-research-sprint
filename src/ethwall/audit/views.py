@@ -533,9 +533,10 @@ def canonical_evidence_items(
     """Expand an export into its set of evidence items.
 
     Events, documents, release records, policy text and record status each become one item.
-    Links are strict: a `links` list adds nothing only if it is exactly
-    `derive_links(export)` (same canonical items, same multiplicity, same order). Any other
-    list (a curated subset, a duplicate, a reordering, extra keys, unknown types, hidden
+    Links are strict and tied to the view: a linked export must carry a `links` list that is
+    exactly `derive_links(export)` (same canonical items, same multiplicity, same order); any
+    other view must carry none. Anything else (a missing `links` key, links on a non-linked
+    view, a curated subset, a duplicate, a reordering, extra keys, unknown types, hidden
     endpoints or well-formed but underivable references) becomes an item, as does each
     underivable link. Any unknown top-level block, any extra field on an event and any
     presentation key off its expected constant/format (`_presentation_items`) also becomes an
@@ -558,9 +559,10 @@ def canonical_evidence_items(
     for key in sorted(set(export) - _PRESENTATION_KEYS - _EVIDENCE_KEYS):
         items.add(("extra", key, canonical_json(export[key])))
     items |= _presentation_items(export)
-    if "links" in export:
-        links = export["links"]
-        derived = [canonical_json(x) for x in derive_links(export)]
+    linked = export.get("view") == View.LINKED.value
+    if linked or "links" in export:
+        links = export.get("links")
+        derived = [canonical_json(x) for x in derive_links(export)] if linked else []
         given = (
             [canonical_json(x) for x in links]
             if isinstance(links, list)

@@ -178,3 +178,14 @@ def test_r_aud_04_prose_store_in_a_denied_list_is_not_exported():
     events = _with_denied_args("list_documents", {"store": PROSE})
     (item,) = _denied(events, View.ACTIONS)
     assert item["args"] == {"store": f"<unrecognized:len={len(PROSE)}>"}
+
+
+def test_r_aud_05_links_are_tied_to_the_view():
+    """R-AUD-05: a linked export must carry exactly the derived links (a deleted `links` key is
+    a curated-to-nothing subset); any other view must carry none."""
+    combined, linked = pair()
+    del linked["links"]
+    assert not vw.evidence_equal(combined, linked)
+    combined, linked = pair()
+    combined["links"] = vw.derive_links(combined)
+    assert not vw.evidence_equal(combined, linked)

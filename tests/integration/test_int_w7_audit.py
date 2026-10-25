@@ -143,3 +143,31 @@ def test_r_aud_06_private_outputs_can_live_outside_the_export_tree(tmp_path):
                    "--out", str(rep)])  # fmt: skip
     assert rc == 0
     assert (rep / "figures" / "figure1_audit.png").exists()
+
+
+def test_r_aud_06_private_out_inside_the_export_tree_is_refused(tmp_path):
+    """R-AUD-06: --private-out inside <out> would be promoted into the labelling tree: exit 2."""
+    rev = tmp_path / "rev"
+    rc = cli.main(["export-review", "--fixtures", "dev", "--out", str(rev),
+                   "--private-out", str(rev / "secret")])  # fmt: skip
+    assert rc == 2
+    assert not rev.exists() and not Path(f"{rev}.staging").exists()
+
+
+def test_r_aud_06_failed_export_leaves_no_staging_behind(tmp_path):
+    """R-AUD-06: an export that fails before the leak check cleans up its own staging and
+    private dirs (no lock-out) and a missing partition is a usage error."""
+    root, out, priv = tmp_path / "runs", tmp_path / "rev", tmp_path / "secret"
+    (root / "mock-w7").mkdir(parents=True)
+    bad = root / "mock-w7" / "broken_run"
+    bad.mkdir()
+    (bad / "events.jsonl").write_text("{not json}\n", encoding="utf-8")
+    try:
+        export(root, out, "--private-out", str(priv))
+    except ValueError:
+        pass
+    assert not out.exists() and not Path(f"{out}.staging").exists()
+    assert not priv.exists()
+    rc = cli.main(["export-review", "--partition", "nope", "--runs-root", str(root),
+                   "--out", str(out)])  # fmt: skip
+    assert rc == 2 and not Path(f"{out}.staging").exists()

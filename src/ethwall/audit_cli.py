@@ -25,6 +25,7 @@ import argparse
 import json
 import os
 import secrets
+import shutil
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -91,18 +92,7 @@ def _write_exports(out: Path, tid: str, exports: Mapping[str, Any]) -> None:
 
 
 def cmd_export_review(argv: list[str]) -> int:
-    from ethwall.analysis import load_run
-    from ethwall.audit import (
-        build_all_fixtures,
-        export_all_views,
-        fixture_world,
-        leak_check,
-        load_construction_manifest,
-        opaque_trajectory_id,
-    )
-    from ethwall.audit.views import leak_report
     from ethwall.cli import UsageError
-    from ethwall.world import build_world
 
     p = argparse.ArgumentParser(prog="ethwall export-review")
     src = p.add_mutually_exclusive_group(required=True)
@@ -122,13 +112,40 @@ def cmd_export_review(argv: list[str]) -> int:
         help="promote despite generic-term hits in agent text (after human triage)",
     )
     a = p.parse_args(argv)
-    out = Path(a.out)
+    out = Path(a.out).resolve()
     staging = out.with_name(out.name + ".staging")
     private = _private_dir(out, staging, a.private_out)
     for path in (out, staging, private):
         if path.exists():
             raise UsageError(f"{path} already exists; refusing to mix exports")
+    if a.partition and not (Path(a.runs_root) / a.partition).is_dir():
+        raise UsageError(f"no partition {a.partition!r} under {a.runs_root}")
     staging.mkdir(parents=True)
+    try:
+        return _export_review(a, out, staging, private)
+    except BaseException:
+        # Fail closed without locking the next run out: remove what this run created.
+        shutil.rmtree(staging, ignore_errors=True)
+        if staging not in private.parents:
+            shutil.rmtree(private, ignore_errors=True)
+        raise
+
+
+def _export_review(
+    a: argparse.Namespace, out: Path, staging: Path, private: Path
+) -> int:
+    from ethwall.analysis import load_run
+    from ethwall.audit import (
+        build_all_fixtures,
+        export_all_views,
+        fixture_world,
+        leak_check,
+        load_construction_manifest,
+        opaque_trajectory_id,
+    )
+    from ethwall.audit.views import leak_report
+    from ethwall.world import build_world
+
     salt = a.salt or secrets.token_hex(8)
     id_map: dict[str, str] = {}
     blocking: list[str] = []
@@ -192,8 +209,18 @@ def cmd_export_review(argv: list[str]) -> int:
             else "unacknowledged review hits (--ack-review)"
         )
         print(f"NOT PROMOTED ({why}): {n} left in {staging} for triage")
+        leftovers = [str(staging)] + (
+            [] if staging in private.parents else [str(private)]
+        )
+        print(f"after triage, remove {' and '.join(leftovers)} before re-running")
         return 1
-    staging.rename(out)
+    try:
+        staging.rename(out)
+    except (
+        OSError
+    ) as exc:  # e.g. Windows: a handle still open, or <out> appeared meanwhile
+        print(f"PROMOTE FAILED ({exc}): {n} kept in {staging}")
+        return 1
     print(f"exported {n} to {out}")
     return 0
 
@@ -202,7 +229,8 @@ def _private_dir(out: Path, staging: Path, private_out: str | None) -> Path:
     """Where id_map.json and leak_review.json go (in staging while exports are unchecked).
 
     Default `<out>/_private` (kept for existing callers; it is promoted with the exports).
-    With `--private-out` outside `<out>` the private files never enter the export tree.
+    With `--private-out` the private files never enter the export tree; a path inside
+    `<out>` is refused, since it would be promoted into the tree a human labels from.
     """
     if private_out is None:
         return staging / "_private"
@@ -210,10 +238,8 @@ def _private_dir(out: Path, staging: Path, private_out: str | None) -> Path:
 
     path = Path(private_out).resolve()
     root = out.resolve()
-    if path == root:
-        raise UsageError("--private-out must not be the export dir itself")
-    if root in path.parents:
-        return staging / path.relative_to(root)
+    if path == root or root in path.parents:
+        raise UsageError("--private-out must be outside the export dir")
     return path
 
 
