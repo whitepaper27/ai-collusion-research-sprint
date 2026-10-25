@@ -22,19 +22,20 @@ IIDFILE="$(mktemp)"
 trap 'rm -f "$IIDFILE"' EXIT
 
 echo "docker-verify: building $IMAGE"
-docker build --iidfile "$IIDFILE" -t "$IMAGE" "$ROOT"
+# Build from the committed tree (git archive HEAD): a true clean room, independent of any
+# uncommitted files or working-tree line endings.
+git -C "$ROOT" archive --format=tar HEAD | docker build --iidfile "$IIDFILE" -t "$IMAGE" -
 IMAGE_ID="$(cat "$IIDFILE")"
 
 echo "docker-verify: pytest in container $IMAGE_ID (--network none)"
 MSYS_NO_PATHCONV=1 docker run --rm --network none "$IMAGE_ID" \
   uv run --offline --frozen pytest -q -p no:cacheprovider -m "not e2e"
 
-# TODO(integrator): once `ethwall run` exists (docs/specs/cli-integration.md R-CLI-01), also run
-# one mock episode per condition here, e.g.
-#   MSYS_NO_PATHCONV=1 docker run --rm --network none "$IMAGE_ID" \
-#     uv run --offline --frozen ethwall run --condition baseline,guarded --seeds 100-100 \
-#       --mode mock --policy honest --partition mock-docker
-# followed by `ethwall verify` on the produced runs, so R-DKR-01's "mock episode in both
-# conditions" is covered. Keep `set -e` so any failure exits non-zero.
+echo "docker-verify: mock episodes in both conditions + verify (--network none)"
+MSYS_NO_PATHCONV=1 docker run --rm --network none "$IMAGE_ID" sh -c '
+  set -e
+  uv run --offline --frozen ethwall run --condition baseline,guarded --seeds 100 --mode mock --policy leaky --partition mock-docker --runs-root /tmp/runs
+  uv run --offline --frozen ethwall verify --partition mock-docker --runs-root /tmp/runs
+'
 
 echo "docker-verify: OK"
