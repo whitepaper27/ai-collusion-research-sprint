@@ -1,4 +1,4 @@
-"""Reservation-based spend ledger (sol.md §9; docs/specs/runtime.md R-SPD-01..05).
+"""Reservation-based spend ledger (sol.md §9; docs/specs/runtime.md R-SPD-01..06).
 
 - The pricing basis (USD per million input/output tokens, where it was read, when) comes from
   the documented `ETHWALL_PRICE_*` settings (`.env.example`); `load_pricing()` refuses to return
@@ -14,17 +14,29 @@
   already counted on disk, so a crash can only over-count. Batch and total caps are enforced
   across every partition ledger under the same `spend/` root (smoke and control share the
   `smoke+control` batch; the total spans all of them).
+- Concurrency (R-SPD-06): every ledger read and every read-modify-write (reserve, settle,
+  cancel, begin_episode, the spend views) holds one root-wide lock, `<root>/.spend.lock`,
+  and re-reads this partition's file and every other partition file from disk under it, so
+  parallel episodes, or an actor run beside an auditor run, cannot lose updates or overshoot
+  a cap. The lock is a byte lock on an open file (`msvcrt.locking` on Windows, `fcntl.flock`
+  elsewhere), released by the OS if the process dies; waiting is bounded
+  (`LedgerLockTimeout`).
 
 All amounts are integer micro-dollars internally.
 """
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
+import errno
 import json
 import math
 import os
-from collections.abc import Mapping
+import random
+import sys
+import time
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from decimal import ROUND_CEILING, Decimal
 from pathlib import Path
@@ -40,6 +52,8 @@ PRICE_ENV_KEYS = (
     "ETHWALL_PRICE_SOURCE",
     "ETHWALL_PRICE_DATE",
 )
+LOCK_NAME = ".spend.lock"
+LOCK_TIMEOUT_S = 30.0
 _PARTITION_BATCH = {
     "main": "main",
     "smoke": "smoke+control",
@@ -49,6 +63,10 @@ _PARTITION_BATCH = {
 
 class PricingError(ValueError):
     """The pricing basis is missing or invalid."""
+
+
+class LedgerLockTimeout(TimeoutError):
+    """The root-wide spend lock could not be acquired within the timeout (R-SPD-06)."""
 
 
 @dataclass(frozen=True)
@@ -110,8 +128,85 @@ def _empty() -> dict[str, Any]:
     return {"schema": SCHEMA, "batches": {}, "episodes": {}}
 
 
+# ---------------------------------------------------------------------------- root lock
+
+# errno values meaning "another handle holds the lock" (msvcrt: EACCES/EDEADLOCK; flock:
+# EWOULDBLOCK/EAGAIN). Anything else is a real error and propagates.
+_BUSY = {errno.EACCES, errno.EAGAIN, errno.EWOULDBLOCK, getattr(errno, "EDEADLOCK", -1)}
+
+if sys.platform == "win32":
+    import msvcrt
+
+    def _try_lock(fd: int) -> bool:
+        os.lseek(fd, 0, os.SEEK_SET)
+        try:
+            msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+        except OSError as exc:
+            if exc.errno in _BUSY:
+                return False
+            raise
+        return True
+
+    def _unlock(fd: int) -> None:
+        os.lseek(fd, 0, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+
+else:
+    import fcntl
+
+    def _try_lock(fd: int) -> bool:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            if exc.errno in _BUSY:
+                return False
+            raise
+        return True
+
+    def _unlock(fd: int) -> None:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+
+
+@contextlib.contextmanager
+def ledger_lock(root: str | Path, timeout: float = LOCK_TIMEOUT_S) -> Iterator[None]:
+    """Hold the root-wide spend lock `<root>/.spend.lock` (R-SPD-06).
+
+    Exclusive across processes, and across separate acquisitions within one process (each
+    call opens its own handle), so it is not re-entrant. Raises LedgerLockTimeout when the
+    lock is still held by someone else after `timeout` seconds.
+    """
+    root = Path(root)
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / LOCK_NAME
+    fd = os.open(path, os.O_RDWR | os.O_CREAT, 0o666)
+    try:
+        deadline = time.monotonic() + max(0.0, float(timeout))
+        while not _try_lock(fd):
+            if time.monotonic() >= deadline:
+                raise LedgerLockTimeout(
+                    f"spend ledger lock {path} not acquired within {timeout:g}s"
+                )
+            time.sleep(random.uniform(0.005, 0.02))
+        try:
+            yield
+        finally:
+            _unlock(fd)
+    finally:
+        os.close(fd)
+
+
+# ---------------------------------------------------------------------------- ledger
+
+
 class SpendLedger:
-    """Per-partition ledger enforcing episode, batch and total caps before every call."""
+    """Per-partition ledger enforcing episode, batch and total caps before every call.
+
+    The files under the root are the only state shared between ledgers: `_data` is a scratch
+    copy reloaded under the root lock at the start of every operation and never trusted
+    across calls (R-SPD-06). Only the open reservation of this instance lives in memory.
+    """
+
+    lock_timeout_s: float = LOCK_TIMEOUT_S
 
     def __init__(
         self, path: str | Path, batch: str, episode_cap_usd: float, pricing: Pricing
@@ -128,7 +223,8 @@ class SpendLedger:
         self._episode_cap = _micro(cap)
         self._batch_cap = _micro(BATCH_CAP_USD[batch])
         self._total_cap = _micro(TOTAL_CAP_USD)
-        self._data = self._read(self.path) if self.path.exists() else _empty()
+        self._root = self.path.parent.parent
+        self._data = _empty()
         self._episode_id: str | None = None
         self._open: int | None = None
         self.last_reserved_usd = 0.0
@@ -153,16 +249,19 @@ class SpendLedger:
     def begin_episode(self, episode_id: str) -> None:
         if self._open is not None:
             raise RuntimeError("cannot start an episode with an open reservation")
-        self._episode_id = episode_id
-        self._data["episodes"].setdefault(
-            episode_id,
-            {"batch": self.batch, "spent_micro": 0, "uncertain": False, "calls": 0},
-        )
+        with (
+            self._locked()
+        ):  # fail at setup, not mid-episode, if the ledger is unreadable
+            self._episode_id = episode_id
+            self._episode()
 
     def _episode(self) -> dict[str, Any]:
         if self._episode_id is None:
             raise RuntimeError("begin_episode() must be called before reserving")
-        return self._data["episodes"][self._episode_id]
+        return self._data["episodes"].setdefault(
+            self._episode_id,
+            {"batch": self.batch, "spent_micro": 0, "uncertain": False, "calls": 0},
+        )
 
     def _batch(self) -> dict[str, Any]:
         return self._data["batches"].setdefault(
@@ -177,45 +276,55 @@ class SpendLedger:
             raise RuntimeError(
                 "a reservation is already open; settle or cancel it first"
             )
-        episode = self._episode()
+        if self._episode_id is None:
+            raise RuntimeError("begin_episode() must be called before reserving")
         cost = self.pricing.cost_micro(input_token_estimate, max_tokens)
-        others_batch, others_total = self._others()
-        fits = (
-            episode["spent_micro"] + cost <= self._episode_cap
-            and self._own_batch() + others_batch + cost <= self._batch_cap
-            and self._own_total() + others_total + cost <= self._total_cap
-        )
-        if not fits:
-            return False
+        with self._locked():
+            episode = self._episode()
+            others_batch, others_total = self._others()
+            fits = (
+                episode["spent_micro"] + cost <= self._episode_cap
+                and self._own_batch() + others_batch + cost <= self._batch_cap
+                and self._own_total() + others_total + cost <= self._total_cap
+            )
+            if not fits:
+                return False
+            self._add(cost)
+            self._write()
         self._open = cost
         self.last_reserved_usd = cost / MICRO
-        self._add(cost)
-        self._write()
         return True
 
     def settle(self, input_tokens: int | None, output_tokens: int | None) -> float:
-        """Charge actual usage; missing usage keeps the reservation and flags uncertainty."""
+        """Charge actual usage; missing usage keeps the reservation and flags uncertainty.
+
+        The call has been made, so the reservation is closed even if settling fails (e.g.
+        LedgerLockTimeout): the reserved amount then stays on disk as the charge (an
+        over-count) and a later cancel() cannot release it.
+        """
         if self._open is None:
             raise RuntimeError("settle() without an open reservation")
-        if input_tokens is None or output_tokens is None:
-            charge = self._open
-            self._episode()["uncertain"] = True
-            self._batch()["uncertain"] = True
-        else:
-            charge = self.pricing.cost_micro(input_tokens, output_tokens)
-        self._add(charge - self._open)
-        self._episode()["calls"] += 1
-        self._open = None
-        self._write()
+        reserved, self._open = self._open, None
+        with self._locked():
+            if input_tokens is None or output_tokens is None:
+                charge = reserved
+                self._episode()["uncertain"] = True
+                self._batch()["uncertain"] = True
+            else:
+                charge = self.pricing.cost_micro(input_tokens, output_tokens)
+            self._add(charge - reserved)
+            self._episode()["calls"] += 1
+            self._write()
         return charge / MICRO
 
     def cancel(self) -> None:
         """Release an open reservation for a call that was never made."""
         if self._open is None:
             return
-        self._add(-self._open)
+        with self._locked():
+            self._add(-self._open)
+            self._write()
         self._open = None
-        self._write()
 
     # ------------------------------------------------------------------ views
 
@@ -225,23 +334,34 @@ class SpendLedger:
 
     @property
     def episode_spent_usd(self) -> float:
-        return self._episode()["spent_micro"] / MICRO
+        with self._locked():
+            return self._episode()["spent_micro"] / MICRO
 
     @property
     def batch_spent_usd(self) -> float:
-        return (self._own_batch() + self._others()[0]) / MICRO
+        with self._locked():
+            return (self._own_batch() + self._others()[0]) / MICRO
 
     @property
     def total_spent_usd(self) -> float:
-        return (self._own_total() + self._others()[1]) / MICRO
+        with self._locked():
+            return (self._own_total() + self._others()[1]) / MICRO
 
     @property
     def uncertain(self) -> bool:
-        if self._episode_id is None:
-            return bool(self._batch()["uncertain"])
-        return bool(self._episode()["uncertain"])
+        with self._locked():
+            if self._episode_id is None:
+                return bool(self._batch()["uncertain"])
+            return bool(self._episode()["uncertain"])
 
     # ------------------------------------------------------------------ internals
+
+    @contextlib.contextmanager
+    def _locked(self) -> Iterator[None]:
+        """Hold the root lock and reload this partition's state from disk."""
+        with ledger_lock(self._root, self.lock_timeout_s):
+            self._data = self._read(self.path) if self.path.exists() else _empty()
+            yield
 
     def _add(self, micro: int) -> None:
         self._episode()["spent_micro"] += micro
@@ -254,11 +374,12 @@ class SpendLedger:
         return sum(int(b.get("spent_micro", 0)) for b in self._data["batches"].values())
 
     def _others(self) -> tuple[int, int]:
-        """(this batch, all batches) spent in the other partition ledgers under root."""
+        """(this batch, all batches) spent in the other partition ledgers under root.
+
+        Call only while holding the root lock."""
         batch = total = 0
-        root = self.path.parent.parent
         mine = self.path.resolve()
-        for p in sorted(root.glob("*/_spend.json")):
+        for p in sorted(self._root.glob("*/_spend.json")):
             if p.resolve() == mine:
                 continue
             for name, b in self._read(p).get("batches", {}).items():
@@ -276,6 +397,7 @@ class SpendLedger:
         return data
 
     def _write(self) -> None:
+        """Atomic replace of this partition's file. Call only while holding the root lock."""
         self._data["schema"] = SCHEMA
         self._data["pricing"] = dataclasses.asdict(self.pricing)
         self.path.parent.mkdir(parents=True, exist_ok=True)

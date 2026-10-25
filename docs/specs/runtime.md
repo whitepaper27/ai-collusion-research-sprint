@@ -74,3 +74,6 @@ network.
   per episode main $1.25, smoke/control $0.80; batches smoke+control $8, main $25, auditor
   $10, reserve $7; total $50.
 - **R-SPD-05** Mock and fixture modes cost 0 and never touch the network.
+- **R-SPD-06** Ledger updates are serialized across processes by a root-wide lock;
+  every reserve/settle re-reads state from disk under the lock, so concurrent runs cannot
+  overshoot the episode, batch or total caps.
