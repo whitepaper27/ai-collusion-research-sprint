@@ -132,13 +132,15 @@ def git_state(repo_root: str | os.PathLike[str]) -> tuple[str | None, bool | Non
     """(HEAD commit, dirty) or (None, None) without git metadata.
 
     Dirty = any tracked change or untracked file outside `runs/` (episode output is written
-    there between the runs of one batch).
+    there between the runs of one batch) and `spend/` (the mutable spend ledger).
     """
     root = Path(repo_root)
     head = _git(root, "rev-parse", "--verify", "HEAD")
     if head is None:
         return None, None
-    status = _git(root, "status", "--porcelain", "--", ".", ":(exclude)runs")
+    status = _git(
+        root, "status", "--porcelain", "--", ".", ":(exclude)runs", ":(exclude)spend"
+    )
     if status is None:
         return head.strip(), None
     return head.strip(), bool(status.strip())

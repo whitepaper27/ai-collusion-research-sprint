@@ -28,7 +28,6 @@ L3 harness (`../harness/evidence/log.py`, `../harness/audit.py`, parent repo com
 from ethwall.recorder._log import (
     EVENTS_FILE,
     INDEX_DIR,
-    INDEX_FILE,
     JsonlRecorder,
     new_run_dir,
     recorder_key,
@@ -46,7 +45,6 @@ __all__ = [
     "EVENTS_FILE",
     "FAULT_ORDER",
     "INDEX_DIR",
-    "INDEX_FILE",
     "JsonlRecorder",
     "build_manifest",
     "git_state",

@@ -16,3 +16,6 @@ __pycache__/
 
 # agent worktrees
 .worktrees/
+
+# mutable spend ledger (accounting, not evidence)
+spend/

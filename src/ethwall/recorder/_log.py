@@ -32,7 +32,6 @@ from ethwall.contract import (
 
 EVENTS_FILE = "events.jsonl"
 INDEX_DIR = "_index"  # one file per run: runs/<partition>/_index/<run_id>.json
-INDEX_FILE = INDEX_DIR  # kept for import compatibility
 KEY_ENV = "ETHWALL_RECORDER_KEY"
 MOCK_KEY = b"ethwall-mock-key"
 MOCK_KEY_ID = "mock-fixed"

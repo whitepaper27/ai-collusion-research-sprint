@@ -52,13 +52,24 @@ rm -rf runs analysis review audit spend   # keep the tree clean for the freeze
 $E freeze create --id t10b-dryrun
 git add protocol/frozen && git commit -qm "t10b dry-run freeze (throwaway clone)"
 $E freeze validate --id t10b-dryrun
+# Commit the tamper so the tree is clean: validation must fail on the prompts hash itself,
+# not merely on a dirty tree.
 echo "# tamper" >> protocol/draft/prompts/pressure.md
-if $E freeze validate --id t10b-dryrun; then
-  echo "t10b: tampered prompt still validated" >&2; exit 1
-fi
-git checkout -q -- protocol/draft/prompts/pressure.md
+git commit -qam "t10b: tamper one prompt (throwaway clone)"
 set +e
-$E run --seeds 200 --mode live --partition main --freeze t10b-dryrun
+out="$($E freeze validate --id t10b-dryrun 2>&1)"
+rc=$?
+set -e
+echo "$out"
+if [ "$rc" = 0 ] || ! grep -q "hashes.prompts" <<<"$out" || grep -q "git_dirty" <<<"$out"; then
+  echo "t10b: tampered prompt was not caught by the prompts hash" >&2; exit 1
+fi
+git revert -q --no-edit HEAD
+$E freeze validate --id t10b-dryrun
+# Live refusal, with provider keys stripped so no future reordering could ever spend.
+set +e
+env -u ANTHROPIC_API_KEY -u ETHWALL_RECORDER_KEY \
+  $E run --seeds 200 --mode live --partition main --freeze t10b-dryrun
 rc=$?
 set -e
 if [ "$rc" != 2 ]; then

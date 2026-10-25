@@ -83,6 +83,10 @@ DECISION_CAP = "DECISION_CAP"
 ACTION_CAP = "ACTION_CAP"
 TRANSPORT_CAP = "TRANSPORT_CAP"
 
+RUN_ID_MISMATCH = (
+    "RUN_ID_MISMATCH"  # events' run_id differs from their run directory name
+)
+
 FAULT_ORDER: tuple[str, ...] = (
     ALTERED,
     BAD_SIG,
@@ -97,6 +101,7 @@ FAULT_ORDER: tuple[str, ...] = (
     DECISION_CAP,
     ACTION_CAP,
     TRANSPORT_CAP,
+    RUN_ID_MISMATCH,
 )
 
 _TRIPLE = ("run_id", "n_events", "head_hash")
@@ -442,4 +447,8 @@ def verify_run(
             else run_dir.parent / INDEX_DIR / f"{run_id}.json"
         )
         entries = _read_index(index_path, run_id)
-    return _verify(events, key, entries, parse_failed=failed)
+    faults = _verify(events, key, entries, parse_failed=failed)
+    if events and run_id != run_dir.name:
+        found = set(faults) | {RUN_ID_MISMATCH}
+        faults = tuple(f for f in FAULT_ORDER if f in found)
+    return faults

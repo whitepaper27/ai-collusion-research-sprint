@@ -28,12 +28,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ethwall.contract import (
+    INTERRUPTED_STATES,
+    LIVE_PARTITIONS,
     Condition,
     EpisodeConfig,
     Mode,
+    TerminalState,
     new_run_id,
     to_jsonable,
 )
+from ethwall.recorder._manifest import default_repo_root
+
+REPO_ROOT = default_repo_root()
 
 LIVE_ENV = ("ACTOR_MODEL_ID", "ANTHROPIC_API_KEY", "ETHWALL_RECORDER_KEY")
 PRICE_ENV = (
@@ -76,21 +82,48 @@ def _run_dirs(root: Path, partition: str) -> list[Path]:
 # ----------------------------------------------------------------------------- run
 
 
-def check_live_preconditions(args: argparse.Namespace, env: os._Environ | dict) -> None:
+def check_live_preconditions(args: argparse.Namespace, env) -> object:
+    """Every live-mode refusal happens here, before any evidence or model client exists.
+
+    Returns the validated pricing basis. Raises UsageError (exit 2) on anything missing or
+    invalid: no --confirm-spend, unset/blank settings, unusable pricing, a main partition
+    without --freeze, or a freeze that does not validate against the current tree.
+    """
     if not args.confirm_spend:
         raise UsageError(
             "live mode spends money: pass --confirm-spend (owner's explicit go)"
         )
-    missing = [k for k in (*LIVE_ENV, *PRICE_ENV) if not env.get(k)]
+    missing = [k for k in (*LIVE_ENV, *PRICE_ENV) if not str(env.get(k) or "").strip()]
     if missing:
         raise UsageError(f"live mode needs these settings: {', '.join(missing)}")
     if args.partition.split("-")[0] == "main" and not args.freeze:
         raise UsageError("main partitions need --freeze <id>")
+    from ethwall.spend import PricingError, load_pricing
+
+    try:
+        pricing = load_pricing(env)
+    except PricingError as e:
+        raise UsageError(f"pricing basis unusable: {e}") from e
+    if args.freeze:
+        from ethwall.freeze import validate_freeze
+
+        mismatches = validate_freeze(args.freeze)
+        if mismatches:
+            raise UsageError(
+                f"freeze {args.freeze!r} does not validate: " + "; ".join(mismatches)
+            )
+    return pricing
+
+
+def exit_code_for(states: Sequence[TerminalState]) -> int:
+    """0 if every episode ended without an interruption; 1 otherwise (R-CLI-10)."""
+    return 1 if any(s in INTERRUPTED_STATES for s in states) else 0
 
 
 def cmd_run(args: argparse.Namespace) -> int:
     from ethwall.enforcement import make_policy
     from ethwall.models import AnthropicActor, mock_model
+    from ethwall.models.anthropic_actor import ModelConfigError
     from ethwall.prompts import load_prompts
     from ethwall.recorder import (
         JsonlRecorder,
@@ -105,24 +138,26 @@ def cmd_run(args: argparse.Namespace) -> int:
     mode = Mode(args.mode)
     conditions = [Condition(c) for c in args.condition.split(",")]
     root = Path(args.runs_root)
-    ledger = None
-    if mode == Mode.LIVE:
-        check_live_preconditions(args, os.environ)
-        from ethwall.spend import SpendLedger, load_pricing
-
-        ledger = SpendLedger.for_partition(
-            args.partition, load_pricing(), args.spend_root
+    if expected_mode(args.partition) != mode:
+        raise UsageError(
+            f"partition {args.partition!r} is not a {mode.value} partition"
         )
+    ledger = live_model = None
+    if mode == Mode.LIVE:
+        pricing = check_live_preconditions(args, os.environ)
+        try:
+            live_model = AnthropicActor.from_env()
+        except ModelConfigError as e:
+            raise UsageError(str(e)) from e
+        from ethwall.spend import SpendLedger
+
+        ledger = SpendLedger.for_partition(args.partition, pricing, args.spend_root)
     elif not args.policy:
         raise UsageError("mock/fixture runs need --policy")
     prompts = load_prompts()
     key, key_id = recorder_key(mode)
-    model_id = (
-        os.environ.get("ACTOR_MODEL_ID", "")
-        if mode == Mode.LIVE
-        else f"mock-{args.policy}"
-    )
-    worst = 0
+    model_id = live_model.model_id if live_model else f"mock-{args.policy}"
+    states: list[TerminalState] = []
     for seed in parse_seeds(args.seeds):
         for condition in conditions:
             config = EpisodeConfig(
@@ -137,13 +172,18 @@ def cmd_run(args: argparse.Namespace) -> int:
             )
             try:
                 config.validate()
-            except ValueError as e:
-                raise UsageError(str(e)) from e
-            if mode == Mode.LIVE and args.partition.split("-")[0] == "main":
-                from ethwall.freeze import require_valid_freeze
+                if mode == Mode.LIVE and args.freeze:
+                    from ethwall.freeze import require_valid_freeze
 
-                require_valid_freeze(config)
+                    # Re-checked per episode so code cannot drift mid-batch.
+                    require_valid_freeze(config)
+            except Exception as e:  # every refusal here is a usage error
+                if states:
+                    print(f"ethwall: stopping batch: {e}", file=sys.stderr)
+                    return max(exit_code_for(states), 2)
+                raise UsageError(str(e)) from e
             world = build_world(seed)
+            model = live_model or mock_model(args.policy, world)
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             run_id = new_run_id(config, stamp, secrets.token_hex(2))
             run_dir = new_run_dir(root, args.partition, run_id)
@@ -155,15 +195,11 @@ def cmd_run(args: argparse.Namespace) -> int:
                 freeze_id=args.freeze,
             )
             manifest["control"] = args.control
+            manifest["recorder_key_id"] = key_id
             (run_dir / "manifest.json").write_text(
                 json.dumps(manifest, sort_keys=True, indent=1), encoding="utf-8"
             )
             recorder = JsonlRecorder(run_dir, run_id, key, key_id)
-            model = (
-                AnthropicActor.from_env()
-                if mode == Mode.LIVE
-                else mock_model(args.policy, world)
-            )
             result = run_episode(
                 config,
                 world=world,
@@ -178,18 +214,71 @@ def cmd_run(args: argparse.Namespace) -> int:
                 json.dumps(to_jsonable(result), sort_keys=True, indent=1),
                 encoding="utf-8",
             )
+            states.append(result.terminal_state)
             print(
                 f"{run_id}  {result.terminal_state.value}  decisions={result.decisions}"
             )
-    return worst
+            if result.terminal_state == TerminalState.SPEND_LIMIT:
+                print("ethwall: spend cap reached; stopping the batch", file=sys.stderr)
+                return exit_code_for(states)
+    return exit_code_for(states)
 
 
 # ----------------------------------------------------------------------------- verify / analyze
 
 
-def cmd_verify(args: argparse.Namespace) -> int:
+def expected_mode(partition: str) -> Mode:
+    """The mode a partition must hold, from its name alone (never from unsigned files)."""
+    base = partition.split("-")[0]
+    if base in LIVE_PARTITIONS:
+        return Mode.LIVE
+    if base in (Mode.MOCK.value, Mode.FIXTURE.value):
+        return Mode(base)
+    raise UsageError(
+        f"partition {partition!r} must start with mock-, fixture-, smoke, control or main"
+    )
+
+
+def verify_dir(run_dir: Path) -> tuple[str, ...]:
+    """Recorder faults plus CLI-level checks for one run directory (never raises).
+
+    The HMAC key comes from the partition name, not from manifest.json (which is unsigned);
+    the signed RUN_START manifest must name the same recorder key id.
+    """
     from ethwall.recorder import recorder_key, verify_run
 
+    extra: list[str] = []
+    try:
+        mode = expected_mode(run_dir.parent.name)
+        key, key_id = recorder_key(mode)
+    except (UsageError, RuntimeError, KeyError) as e:
+        return (f"KEY_UNAVAILABLE:{e}",)
+    faults = list(verify_run(run_dir, key))
+    if not (run_dir / "manifest.json").exists():
+        extra.append("MANIFEST_MISSING")
+    else:
+        manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+        if manifest.get("mode") != mode.value:
+            extra.append("MODE_MISMATCH")
+    start = _run_start_manifest(run_dir)
+    if start is not None and start.get("recorder_key_id") not in (None, key_id):
+        extra.append("KEY_ID_MISMATCH")
+    return tuple(faults + [x for x in extra if x not in faults])
+
+
+def _run_start_manifest(run_dir: Path) -> dict | None:
+    try:
+        first = (run_dir / "events.jsonl").read_text(encoding="utf-8").splitlines()[0]
+        event = json.loads(first)
+    except (OSError, IndexError, ValueError):
+        return None
+    if event.get("kind") != "RUN_START":
+        return None
+    manifest = event.get("payload", {}).get("manifest")
+    return manifest if isinstance(manifest, dict) else None
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
     dirs = (
         [Path(args.run_dir)]
         if args.run_dir
@@ -200,9 +289,7 @@ def cmd_verify(args: argparse.Namespace) -> int:
         return 1
     bad = 0
     for d in dirs:
-        manifest = json.loads((d / "manifest.json").read_text(encoding="utf-8"))
-        key, _ = recorder_key(Mode(manifest["mode"]))
-        faults = verify_run(d, key)
+        faults = verify_dir(d)
         bad += bool(faults)
         print(f"{d.name}  {'clean' if not faults else ','.join(faults)}")
     return 1 if bad else 0
@@ -210,18 +297,13 @@ def cmd_verify(args: argparse.Namespace) -> int:
 
 def cmd_analyze(args: argparse.Namespace) -> int:
     from ethwall.analysis import analyze_partition
-    from ethwall.recorder import recorder_key, verify_run
 
     dirs = _run_dirs(Path(args.runs_root), args.partition)
     if not dirs:
         print("no runs found", file=sys.stderr)
         return 1
-    mode = Mode(
-        json.loads((dirs[0] / "manifest.json").read_text(encoding="utf-8"))["mode"]
-    )
-    key, _ = recorder_key(mode)
-    out = Path(args.out or Path("analysis") / args.partition)
-    result = analyze_partition(dirs, out, verifier=lambda d: verify_run(d, key))
+    out = Path(args.out or REPO_ROOT / "analysis" / args.partition)
+    result = analyze_partition(dirs, out, verifier=verify_dir)
     print(f"analysis written to {out} ({len(result.rows)} episodes)")
     return 0
 
@@ -293,20 +375,20 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument(
         "--confirm-spend", action="store_true", help="owner's go for paid calls"
     )
-    r.add_argument("--runs-root", default="runs")
-    r.add_argument("--spend-root", default="spend")
+    r.add_argument("--runs-root", default=str(REPO_ROOT / "runs"))
+    r.add_argument("--spend-root", default=str(REPO_ROOT / "spend"))
     r.set_defaults(func=cmd_run)
 
     v = sub.add_parser("verify", help="verify recorded runs")
     v.add_argument("--partition")
     v.add_argument("--run-dir")
-    v.add_argument("--runs-root", default="runs")
+    v.add_argument("--runs-root", default=str(REPO_ROOT / "runs"))
     v.set_defaults(func=cmd_verify)
 
     a = sub.add_parser("analyze", help="tables, figures and fact sheet for a partition")
     a.add_argument("--partition", required=True)
     a.add_argument("--out")
-    a.add_argument("--runs-root", default="runs")
+    a.add_argument("--runs-root", default=str(REPO_ROOT / "runs"))
     a.set_defaults(func=cmd_analyze)
 
     f = sub.add_parser("freeze", help="create or validate a protocol freeze")

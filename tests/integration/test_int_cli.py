@@ -17,9 +17,15 @@ from ethwall.evaluate import evaluate_run
 from ethwall.recorder import recorder_key, verify_run
 from ethwall.world import build_world
 
+BOTH = {"baseline", "guarded"}
+
 
 def run_cli(tmp_path: Path, *argv: str) -> int:
     return cli.main([*argv, "--runs-root", str(tmp_path / "runs")])
+
+
+def run_ok(tmp_path: Path, *argv: str) -> None:
+    assert run_cli(tmp_path, *argv) == 0
 
 
 def runs(tmp_path: Path, partition: str) -> list[Path]:
@@ -40,11 +46,14 @@ def metrics(run_dir: Path):
     )
 
 
-def by_condition(tmp_path, partition):
+def by_condition(tmp_path, partition, *, per_condition: int):
+    """Metrics grouped by condition; asserts both conditions ran the expected count."""
     out = {}
     for d in runs(tmp_path, partition):
         m = metrics(d)
         out.setdefault(m.condition, []).append(m)
+    assert set(out) == BOTH
+    assert all(len(rows) == per_condition for rows in out.values())
     return out
 
 
@@ -108,24 +117,24 @@ def test_all_commands_are_wired():
 
 
 def test_doctor_reports_presence_never_values(monkeypatch, capsys):
-    """R-CLI-04: doctor prints set/missing only."""
+    """R-CLI-04: doctor prints set/missing only, per setting."""
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-secret-value-123")
     monkeypatch.delenv("AUDITOR_MODEL_ID", raising=False)
     assert cli.main(["doctor"]) == 0
     out = capsys.readouterr().out
     assert "sk-secret-value-123" not in out
-    assert "ANTHROPIC_API_KEY" in out and "set" in out
-    assert "AUDITOR_MODEL_ID" in out and "missing" in out
-    assert "docker" in out
+    lines = {ln.split()[0]: ln.split()[-1] for ln in out.splitlines() if ln.strip()}
+    assert lines["ANTHROPIC_API_KEY"] == "set"
+    assert lines["AUDITOR_MODEL_ID"] == "missing"
+    assert lines["docker"] in {"running", "unavailable"}
 
 
 def test_honest_completes_cleanly_in_both_conditions(tmp_path):
     """R-CLI-05: COMPLETED, reporting 10, trading 3, no violations, recorder clean."""
-    run_cli(
+    run_ok(
         tmp_path, "run", "--seeds", "0-2", "--policy", "honest", "--partition", "mock-h"
     )
-    groups = by_condition(tmp_path, "mock-h")
-    assert set(groups) == {"baseline", "guarded"}
+    groups = by_condition(tmp_path, "mock-h", per_condition=3)
     for rows in groups.values():
         for m in rows:
             assert m.terminal_state == "COMPLETED"
@@ -138,10 +147,10 @@ def test_honest_completes_cleanly_in_both_conditions(tmp_path):
 
 def test_leaky_baseline_leaks_guarded_blocks_with_logged_rule(tmp_path):
     """R-CLI-06: baseline restricted publication true; guarded false with a PROV_* block."""
-    run_cli(
+    run_ok(
         tmp_path, "run", "--seeds", "0-2", "--policy", "leaky", "--partition", "mock-l"
     )
-    groups = by_condition(tmp_path, "mock-l")
+    groups = by_condition(tmp_path, "mock-l", per_condition=3)
     assert all(m.restricted_publication.value == "true" for m in groups["baseline"])
     for m in groups["guarded"]:
         assert m.restricted_publication.value == "false"
@@ -150,7 +159,7 @@ def test_leaky_baseline_leaks_guarded_blocks_with_logged_rule(tmp_path):
 
 def test_mistaken_is_contradicted_in_both_conditions(tmp_path):
     """R-CLI-07: the provenance gate doesn't check truth."""
-    run_cli(
+    run_ok(
         tmp_path,
         "run",
         "--seeds",
@@ -160,16 +169,16 @@ def test_mistaken_is_contradicted_in_both_conditions(tmp_path):
         "--partition",
         "mock-m",
     )
-    for rows in by_condition(tmp_path, "mock-m").values():
+    for rows in by_condition(tmp_path, "mock-m", per_condition=2).values():
         assert all(m.contradicted_publication.value == "true" for m in rows)
 
 
 def test_refusing_is_refused_with_known_zero(tmp_path):
     """R-CLI-08: REFUSED; endpoints known zero because reconciliation is complete."""
-    run_cli(
+    run_ok(
         tmp_path, "run", "--seeds", "0", "--policy", "refusing", "--partition", "mock-r"
     )
-    for rows in by_condition(tmp_path, "mock-r").values():
+    for rows in by_condition(tmp_path, "mock-r", per_condition=1).values():
         for m in rows:
             assert m.terminal_state == "REFUSED"
             assert list(m.recorder_faults) == []
@@ -181,10 +190,11 @@ def test_instructed_pair_is_tagged_control(tmp_path):
     """R-CLI-09: control episodes are tagged and excluded from spontaneous rates."""
     from ethwall.analysis import endpoint_summary
 
-    run_cli(tmp_path, "run", "--seeds", "150-151", "--policy", "instructed_pair",
-            "--partition", "mock-control", "--control")  # fmt: skip
-    rows = [m for ms in by_condition(tmp_path, "mock-control").values() for m in ms]
-    assert rows and all(m.control for m in rows)
+    run_ok(tmp_path, "run", "--seeds", "150-151", "--policy", "instructed_pair",
+           "--partition", "mock-control", "--control")  # fmt: skip
+    groups = by_condition(tmp_path, "mock-control", per_condition=2)
+    rows = [m for ms in groups.values() for m in ms]
+    assert all(m.control for m in rows)
     spontaneous = endpoint_summary(rows, "restricted_publication")
     assert all(s.evaluable == 0 for s in spontaneous.values())
 
@@ -192,10 +202,10 @@ def test_instructed_pair_is_tagged_control(tmp_path):
 @pytest.mark.parametrize("policy", ["honest", "leaky", "refusing"])
 def test_caps_hold_end_to_end(tmp_path, policy):
     """R-CLI-10: decisions <= 30, actions <= 90, <= 2 transport attempts per decision, $0 mock."""
-    run_cli(
-        tmp_path, "run", "--seeds", "3", "--policy", policy, "--partition", "mock-c"
-    )
-    for d in runs(tmp_path, "mock-c"):
+    run_ok(tmp_path, "run", "--seeds", "3", "--policy", policy, "--partition", "mock-c")
+    dirs = runs(tmp_path, "mock-c")
+    assert len(dirs) == 2
+    for d in dirs:
         result = json.loads((d / "result.json").read_text())
         assert result["decisions"] <= DECISIONS_PER_EPISODE
         assert result["actions"] <= MAX_ACTIONS_PER_EPISODE
@@ -208,10 +218,10 @@ def test_caps_hold_end_to_end(tmp_path, policy):
 def test_verify_and_analyze_commands(tmp_path):
     """R-CLI-11 (live-data part): verify is clean; analyze writes tables, figures 2-3 stamped
     MOCK and the fact sheet. Figure 1 (audit views) is covered with the audit study."""
-    run_cli(
+    run_ok(
         tmp_path, "run", "--seeds", "0-1", "--policy", "leaky", "--partition", "mock-v"
     )
-    run_cli(
+    run_ok(
         tmp_path, "run", "--seeds", "2", "--policy", "honest", "--partition", "mock-v"
     )
     root = str(tmp_path / "runs")
@@ -223,7 +233,17 @@ def test_verify_and_analyze_commands(tmp_path):
         )
         == 0
     )
-    sheet = json.loads((out / "fact_sheet.json").read_text())
-    assert sheet
+    numbers = json.loads((out / "fact_sheet.json").read_text())["numbers"]
+    assert numbers
+    for n in numbers:
+        assert (
+            set(n) >= {"name", "value", "source", "sha256"} and len(n["sha256"]) == 64
+        )
     pngs = sorted(p.name for p in (out / "figures").glob("*.png"))
     assert pngs == ["figure2_live.png", "figure3_trajectory.png"]
+    from ethwall.analysis import analyze_partition
+
+    result = analyze_partition(
+        runs(tmp_path, "mock-v"), tmp_path / "a2", verifier=cli.verify_dir
+    )
+    assert all("MOCK" in fig.title for fig in result.figures.values())
