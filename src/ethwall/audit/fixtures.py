@@ -2,7 +2,7 @@
 
 A fixture is a short *scripted* trajectory recorded as a real event stream. The builder runs
 the real runtime (`run_episode`, mode `fixture`) with the real services and enforcement on a
-real world (`build_world`, fixture-only seeds 900-911), driven by a deterministic script actor
+real world (`build_world`, fixture-only seeds 900-917), driven by a deterministic script actor
 instead of a model. So every event (observations, deliveries, decisions, blocks, fills) has
 exactly the shape a live run would produce. The builder never reads or writes `runs/`.
 
