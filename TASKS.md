@@ -18,7 +18,7 @@ Waves run in parallel worktrees (≤3 workers at a time); everything else is seq
 | T8 | W5 evaluate + analysis (spec `evaluate-analysis.md`) | agent | T3 | 2 | Every R-EVL/R-ANL ID tested | done |
 | T9 | W6 audit fixtures, views, auditor runner, labels, metrics (spec `audit.md`) | agent | T3 | 2 | Every R-AUD ID tested | done |
 | T10 | Integration: merge waves, CLI (spec `cli-integration.md`), e2e mock suite, Docker clean room, reviewer pass | agent | T4–T9 | – | **Sun 6 AM milestone**: mock episodes + exports + tests green | doing |
-| T10b | Mock smoke (seeds 100–102 × 2 + controls 150–151 in mock mode) + full e2e suite + freeze create/validate dry run end to end | agent | T10 | – | All green; **gate for any paid-run planning** | doing |
+| T10b | Mock smoke (seeds 100–102 × 2 + controls 150–151 in mock mode) + full e2e suite + freeze create/validate dry run end to end | agent | T10 | – | All green; **gate for any paid-run planning** | done (re-run after review fixes) |
 | T11 | Smoke (6) + instructed controls (4) live; cost projection; choose 20 or 12 main | human go, agent runs | T10b, T0b | – | Within $8; decision recorded before main outcomes | todo |
 | T12 | Freeze protocol (`ethwall freeze`) | human | T11 | – | Freeze ID committed; **Sun 9 AM** | todo |
 | T13 | Main runs (seeds 200–209 × 2, or 200–205 fallback) | human go, agent runs | T12 | – | Roster complete or stopped at cutoff; **Sun 1 PM** | todo |
