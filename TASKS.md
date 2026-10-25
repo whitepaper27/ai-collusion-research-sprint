@@ -1,7 +1,7 @@
 # TASKS
 
 Ordered work list for `sol.md` v5.2. Each task advances a GOAL.md definition-of-done line or
-milestone. Status: `todo` · `doing` · `done` · `blocked`. Owner: `agent` or `human` (Sahil).
+milestone. Status: `todo` · `doing` · `done` · `blocked` · `post-sprint` (paper phase, after the fixture-only sprint submission). Owner: `agent` or `human` (Sahil).
 Waves run in parallel worktrees (≤3 workers at a time); everything else is sequential.
 
 | ID | Task | Owner | Depends on | Wave | Done when | Status |
@@ -19,9 +19,11 @@ Waves run in parallel worktrees (≤3 workers at a time); everything else is seq
 | T9 | W6 audit fixtures, views, auditor runner, labels, metrics (spec `audit.md`) | agent | T3 | 2 | Every R-AUD ID tested | done |
 | T10 | Integration: merge waves, CLI (spec `cli-integration.md`), e2e mock suite, Docker clean room, reviewer pass | agent | T4–T9 | – | **Sun 6 AM milestone**: mock episodes + exports + tests green | done |
 | T10b | Mock smoke (seeds 100–102 × 2 + controls 150–151 in mock mode) + full e2e suite + freeze create/validate dry run end to end | agent | T10 | – | All green; **gate for any paid-run planning** | done |
-| T11 | Smoke (6) + instructed controls (4) live; cost projection; choose 20 or 12 main | human go, agent runs | T10b, T0b | – | Within $8; decision recorded before main outcomes | todo |
-| T12 | Freeze protocol (`ethwall freeze`) | human | T11 | – | Freeze ID committed; **Sun 9 AM** | todo |
-| T13 | Main runs (seeds 200–209 × 2, or 200–205 fallback) | human go, agent runs | T12 | – | Roster complete or stopped at cutoff; **Sun 1 PM** | todo |
+| T10c | Apply pre-freeze owner decisions (h11, pair-5, rubric wording, pair-4, first-record rule, private dir); refreeze roster; ledger lock (R-SPD-06) | agent | T10b | – | Roster verifies; gate green | done |
+| T14a | **Sprint:** auditor on 6 dev fixtures (≤24 calls) → freeze auditor → Sahil labels 12 held-out → held-out auditor (48 calls) → Figure 1 + fact sheet | human go + agent | T10c, T0b | – | Labels before predictions; ≤$10 | todo |
+| T11 | Smoke (6) + instructed controls (4) live; cost projection; choose 20 or 12 main | human go, agent runs | T10b, T0b | – | Within $8; decision recorded before main outcomes | post-sprint |
+| T12 | Freeze protocol (`ethwall freeze`) | human | T11 | – | Freeze ID committed; **Sun 9 AM** | post-sprint |
+| T13 | Main runs (seeds 200–209 × 2, or 200–205 fallback) | human go, agent runs | T12 | – | Roster complete or stopped at cutoff; **Sun 1 PM** | post-sprint |
 | T14 | Human labels → auditor dev → frozen auditor → held-out + main | human + agent | T13, T9 | – | Labels before predictions; within $10 | todo |
 | T15 | Figures 1–3, tables, verified fact sheet | agent | T14 | – | Generated from recorded evidence; **Sun 5 PM** | todo |
 | T16 | Report in official template (≤8 pages, limitations/dual-use appendix) | human | T15 | – | Checked against evidence; **Sun 10 PM** | todo |

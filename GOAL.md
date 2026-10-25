@@ -1,16 +1,20 @@
 # GOAL
 
-The file every other decision defers to. The research plan is [`sol.md`](sol.md) **v5.2**
-(2026-10-24); this page is its operating summary. If they disagree, `sol.md` wins and this file
+The file every other decision defers to. The research plan is [`sol.md`](sol.md) **v5.3**
+(2026-10-25); this page is its operating summary. If they disagree, `sol.md` wins and this file
 gets fixed. System design: [`ARCHITECTURE.md`](ARCHITECTURE.md). Work list: [`TASKS.md`](TASKS.md).
 
-**Owner:** Sahil Soni (sole human reviewer and report author) · **Last updated:** 2026-10-24
+**Owner:** Sahil Soni (sole human reviewer and report author) · **Last updated:** 2026-10-25
 
 ## Owner decisions
 
-- [x] **Build authorized for v5.2** (2026-10-24), effective once this file, AGENTS.md and the
-      old world plan are reconciled with v5.2 (done in branch `docs/v5.2-setup`). sol.md
-      lines 4 and 11 still say "paused"; the owner updates them.
+- [x] **Build authorized for v5.2** (2026-10-24) after this file, AGENTS.md and the old world
+      plan were reconciled; recorded in sol.md v5.3 (2026-10-25). Harness built and verified.
+- [x] **Sprint path (2026-10-25): fixture-only fallback.** The sprint submission is the
+      validated fixture study plus the working artifact, live evidence explicitly absent. The
+      live study (smoke, controls, freeze, main) continues after the sprint for the paper.
+- [x] **Pre-freeze scientific decisions settled** (2026-10-25):
+      `docs/decisions/pre-freeze-owner-decisions.md`.
 - [x] **Paid runs only on the owner's explicit go.** Agents build and test in `mock`/`fixture`
       mode and never start live calls on their own.
 - [x] **Paid-run gate (2026-10-24):** no paid runs, and no paid-run planning, until the whole
@@ -86,15 +90,16 @@ outcomes: 20 → 12 main episodes → fixture-only study.
 
 ## Milestones (America/Chicago)
 
+Revised 2026-10-25 (sol.md v5.3): the sprint uses the fixture-only fallback.
+
 | When | Milestone |
 |---|---|
-| Sun Oct 25, 6 AM | Mock episode, evidence exports, essential tests green |
-| Sun 9 AM | Smoke + controls assessed, cost decision, protocol frozen (or fixture-only fallback) |
-| Sun 1 PM | Main actor runs finished or stopped at cutoff; full roster preserved |
-| Sun 5 PM | Human labels, auditor evaluation, figures, verified fact sheet |
-| Sun 10 PM | Author's report complete and checked against evidence |
-| Sun 11:30 PM | Submitted; confirmation retained |
-| Mon 6:59 AM | Official deadline; margin only |
+| Done, Oct 25 | Harness built; mock episodes, exports, tests, end-to-end mock dry run; decisions applied |
+| Sprint (before Mon Oct 26, 6:59 AM) | Owner merges; sets AUDITOR_MODEL_ID + pricing; go for ≤24 dev-fixture auditor calls |
+| Sprint | Freeze auditor prompt/model/settings; Sahil labels the 12 held-out fixtures before any prediction |
+| Sprint | Held-out auditor run (48 decisions, ≤$10 batch); Figure 1; verified fact sheet |
+| Sprint | Sahil's report as a validated fixture study (live evidence absent); submit, keep confirmation |
+| Post-sprint (paper) | Live smoke + controls, cost projection, protocol freeze, main runs, labels, Figures 2–3 |
 
 ## Non-goals
 
@@ -109,22 +114,22 @@ outcomes: 20 → 12 main episodes → fixture-only study.
 ## Decision rule under time pressure
 
 1. KEEP: both live conditions, audit fixtures + four views, human adjudication, writing time.
-2. If live execution is not viable at the 9 AM cutoff: submit the validated fixture study and
-   working artifact, with live evidence explicitly absent.
+2. **Active (2026-10-25):** live execution is not viable before the sprint deadline, so submit
+   the validated fixture study and working artifact, with live evidence explicitly absent.
 3. Cut in this order: optional engineering polish → auditor calls on smoke/control → main
    episodes down to the 6-seed fallback (chosen before outcomes).
 
 ## Definition of done
 
-- [ ] Docs reconciled with v5.2; specs in `docs/specs/` with requirement IDs; traceability test
-- [ ] Seeded world, release records, fact registry, predicate vocabulary, price path
-- [ ] Services: store reads, public retrieval, messaging, orders, structured publication, duty reports
-- [ ] Provenance enforcement at messages, publication and orders, each with block + allow tests
-- [ ] Scheduler (6 rounds × 5 slots), caps, terminal states, spend ledger
-- [ ] Append-only reconciled recorder; tamper tests; freeze create/validate
-- [ ] Evaluator endpoints + legitimate-work scoring; restricted content cannot raise scores
-- [ ] Audit fixtures (6 dev, 12 held-out), four views, equality + leak checks, label CLI, metrics
-- [ ] Mock end-to-end in both conditions; Docker clean room green; `verify.sh` green
+- [x] Docs reconciled with v5.2; specs in `docs/specs/` with requirement IDs; traceability test
+- [x] Seeded world, release records, fact registry, predicate vocabulary, price path
+- [x] Services: store reads, public retrieval, messaging, orders, structured publication, duty reports
+- [x] Provenance enforcement at messages, publication and orders, each with block + allow tests
+- [x] Scheduler (6 rounds × 5 slots), caps, terminal states, spend ledger
+- [x] Append-only reconciled recorder; tamper tests; freeze create/validate
+- [x] Evaluator endpoints + legitimate-work scoring; restricted content cannot raise scores
+- [x] Audit fixtures (6 dev, 12 held-out), four views, equality + leak checks, label CLI, metrics
+- [x] Mock end-to-end in both conditions; Docker clean room green; `verify.sh` green
 - [ ] Smoke + controls run (owner's go); protocol frozen; main runs; auditor runs
 - [ ] Figures 1–3, tables, fact sheet generated from recorded evidence
 - [ ] Report written by Sahil in the official template; submitted before the deadline
