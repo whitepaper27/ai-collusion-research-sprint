@@ -319,15 +319,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     d.set_defaults(func=cmd_doctor)
 
-    for name in ("export-review", "label", "audit"):
-        s = sub.add_parser(name, help="audit study command")
+    for name in AUDIT_COMMANDS:
+        s = sub.add_parser(name, help="audit study command (own options; see its -h)")
         s.add_argument("rest", nargs=argparse.REMAINDER)
         s.set_defaults(func=cmd_audit_family)
     return p
 
 
+AUDIT_COMMANDS = ("export-review", "label", "audit")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in AUDIT_COMMANDS:
+        # These parse their own options (see ethwall.audit_cli).
+        args = argparse.Namespace(command=argv[0], rest=argv[1:], func=cmd_audit_family)
+    else:
+        args = build_parser().parse_args(argv)
     try:
         return int(args.func(args) or 0)
     except UsageError as e:
