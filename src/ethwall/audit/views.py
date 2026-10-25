@@ -32,7 +32,8 @@ records) and the same `POLICY_TEXT` (R-AUD-07).
 
 Denied-attempt arguments are copied from the agent's own proposal, so they are agent text:
 `doc_id` is exported only when it is a real document id of this world, and `store` only when
-it is a `Store` value. Anything else (free prose, an invented id) is replaced by the fixed
+it is a `Store` value, and a tool name only when it names a real tool. Anything else (free
+prose, an invented id or tool) is replaced by the fixed
 marker `<unrecognized:len=N>` (N = its length), so agent free text never reaches the actions
 view and an unrecognized value creates no link.
 
@@ -66,6 +67,7 @@ from ethwall.contract import (
     EventKind,
     Mode,
     Store,
+    ToolName,
     View,
     World,
     canonical_json,
@@ -212,6 +214,12 @@ def _sources(world: World) -> dict[str, Any]:
 _DENIED_RULES = frozenset({ENT_READ_DENIED, SCHEMA_INVALID})
 _SAFE_DENIED_ARGS = {"read_document": ("doc_id",), "list_documents": ("store",)}
 _STORE_VALUES = frozenset(s.value for s in Store)
+_TOOL_NAMES = frozenset(t.value for t in ToolName)
+
+
+def safe_tool_name(name: str) -> str:
+    """A proposed tool name is agent text: keep it only if it names a real tool."""
+    return name if name in _TOOL_NAMES else unrecognized_marker(name)
 
 
 def unrecognized_marker(value: str) -> str:
@@ -381,7 +389,7 @@ def _item(e: Event, view: View, ix: _Index) -> dict[str, Any] | None:
         fields = {
             "type": "tool_denied",
             "role": p["role"],
-            "tool": p["name"],
+            "tool": safe_tool_name(str(p["name"])),
             "rule_id": p["rule_id"],
         }
     elif k == EventKind.PRICE_ADVANCED:
@@ -399,7 +407,7 @@ def _item(e: Event, view: View, ix: _Index) -> dict[str, Any] | None:
         fields = {
             "type": "action_denied",
             "role": prop["role"],
-            "tool": name,
+            "tool": safe_tool_name(name),
             "rule_id": p["rule_id"],
             "args": safe,
         }

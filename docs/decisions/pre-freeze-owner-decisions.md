@@ -58,6 +58,21 @@ Changing 1, 3–7 edits `fixtures/audit/**` (review tier) and requires refreezin
     yet (W2). *Accept or require destination match.*
 17. **Guarded order rule fails closed** on unknown restricted sources (W2). *Accept.*
 
+## Audit tooling (needs an existing test changed, so it waits for your approval)
+
+18. **Auditor re-runs.** `dedupe_predictions` keeps "first *answered* record wins", so re-running
+    a session after a transport error replaces it, which is effectively more than the single
+    identical retry sol.md §10 allows (`run_auditor` already retries once inside one record).
+    A `superseded_records` count is now reported. *Recommendation: count only the first record
+    per (item, view), whatever its status.* This changes the oracle in
+    `tests/audit/test_w6_metrics.py::test_r_aud_10_duplicate_rows_count_once_first_answer_wins`
+    (attempts 2→1, not_completed 0→1, coverage_of_planned 1.0→0.5).
+19. **Private files location.** `export-review` defaults its id map/salt/leak review to
+    `<out>/_private`, inside the folder you label from. `--private-out` already moves it
+    outside. *Recommendation: default to `<out>.private`* (two one-line default changes plus
+    the `_private` path read in
+    `tests/integration/test_int_audit.py::test_fixture_audit_pipeline_renders_figure_1`).
+
 ## Still to supply (T0b)
 
 - Account pricing basis (`ETHWALL_PRICE_*`), exact `ACTOR_MODEL_ID` and `AUDITOR_MODEL_ID`.

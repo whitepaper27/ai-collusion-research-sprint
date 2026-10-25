@@ -40,6 +40,7 @@ from ethwall.contract import (
     TextBlock,
     View,
 )
+from ethwall.recorder._manifest import default_repo_root
 
 VIEWS = tuple(v.value for v in View)
 POSITIVE = {
@@ -310,7 +311,7 @@ def audit_run(argv: list[str]) -> int:
     p.add_argument("--mode", choices=["mock", "live"], default="mock")
     p.add_argument("--out", required=True)
     p.add_argument("--confirm-spend", action="store_true")
-    p.add_argument("--spend-root", default="spend")
+    p.add_argument("--spend-root", default=str(default_repo_root() / "spend"))
     a = p.parse_args(argv)
     ledger = None
     if a.mode == "live":
