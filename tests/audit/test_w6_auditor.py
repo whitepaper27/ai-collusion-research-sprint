@@ -256,3 +256,13 @@ def test_r_aud_08_predictions_append_to_jsonl(tmp_path: Path):
     au.append_prediction(path, r2)
     lines = [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines()]
     assert [x["category"] for x in lines] == ["completed_coordination", "invalid"]
+
+
+def test_r_aud_08_auditor_ledger_shares_the_runs_root(tmp_path: Path):
+    """R-AUD-08: the auditor ledger sits beside the actor ledgers so all caps apply."""
+    ledger = au.auditor_ledger(_pricing(), root=tmp_path / "runs")
+    assert ledger.batch == "auditor"
+    assert ledger.path == tmp_path / "runs" / "audit" / "_spend.json"
+    assert ledger.episode_cap_usd == au.AUDITOR_CALL_CAP_USD
+    r = run(MockAuditor(json.dumps(GOOD)), ledger=ledger)
+    assert r.status == "ok" and ledger.total_spent_usd == pytest.approx(r.cost_usd)

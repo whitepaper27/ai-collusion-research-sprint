@@ -519,12 +519,46 @@ def load_construction_manifest(path: str | Path | None = None) -> dict[str, Any]
     return json.loads(target.read_text(encoding="utf-8"))
 
 
-def pair_clusters(manifest: Mapping[str, Any]) -> dict[str, str]:
-    """{held-out fixture id: pair id} - the bootstrap unit for held-out fixtures (R-AUD-11)."""
+def trajectory_ids(salt: str) -> dict[str, str]:
+    """{fixture id: opaque trajectory id} for exports, predictions and labels.
+
+    Exports, auditor predictions and human labels are keyed by the opaque trajectory id;
+    the construction manifest is keyed by fixture id. This map joins them. Like the manifest,
+    keep it (and the salt) apart from anything shown to the auditor.
+    """
+    from ethwall.audit.views import opaque_trajectory_id
+
+    return {fid: opaque_trajectory_id(fid, salt=salt) for fid in fixture_ids()}
+
+
+def _key(fixture_id: str, id_map: Mapping[str, str] | None) -> str:
+    return id_map[fixture_id] if id_map is not None else fixture_id
+
+
+def pair_clusters(
+    manifest: Mapping[str, Any], id_map: Mapping[str, str] | None = None
+) -> dict[str, str]:
+    """{held-out item: pair id} - the bootstrap unit for held-out fixtures (R-AUD-11).
+
+    Items are fixture ids, or trajectory ids when `id_map` (see `trajectory_ids`) is given.
+    """
     return {
-        e["fixture_id"]: e["pair_id"]
+        _key(e["fixture_id"], id_map): e["pair_id"]
         for e in manifest["fixtures"]
         if e["partition"] == HELDOUT_PARTITION
+    }
+
+
+def manifest_references(
+    manifest: Mapping[str, Any],
+    id_map: Mapping[str, str] | None = None,
+    partition: str | None = None,
+) -> dict[str, str]:
+    """{item: intended label} from the construction manifest (analysis only, never exported)."""
+    return {
+        _key(e["fixture_id"], id_map): e["intended_label"]
+        for e in manifest["fixtures"]
+        if partition is None or e["partition"] == partition
     }
 
 
@@ -548,8 +582,10 @@ __all__ = [
     "fixture_world",
     "load_construction_manifest",
     "load_templates",
+    "manifest_references",
     "pair_clusters",
     "stream_sha256",
+    "trajectory_ids",
     "verify_roster",
     "world_vars",
     "write_roster",

@@ -217,3 +217,30 @@ def test_r_aud_11_bootstrap_statistics_cover_errors_accusations_misses_abstentio
             n_boot=5,
             seed=1,
         )
+
+
+def test_r_aud_10_mismatched_id_spaces_fail_loudly():
+    """R-AUD-10: predictions keyed differently from the references raise, not report zero."""
+    with pytest.raises(ValueError):
+        mt.audit_metrics([p("Tdeadbeef", CC)], {"audit-h01": CC})
+    with pytest.raises(ValueError):
+        mt.paired_view_comparison(
+            [p("Tdeadbeef", CC)], {"audit-h01": CC}, "combined", "linked"
+        )
+
+
+def test_r_aud_10_coverage_of_planned_counts_unanswered_calls():
+    """R-AUD-10: coverage over planned decisions keeps transport/spend failures visible."""
+    m = mt.audit_metrics([p("a", CC), p("b", None)], REFS)
+    assert m["coverage"] == 1.0
+    assert m["coverage_of_planned"] == pytest.approx(0.5)
+
+
+def test_r_aud_11_bootstrap_rejects_clusters_in_another_id_space():
+    """R-AUD-11: clusters keyed by fixture ids cannot silently drop every trajectory."""
+    preds, refs, _ = _bootstrap_data()
+    wrong = {f"audit-h{i:02d}": "pair-1" for i in range(12)}
+    with pytest.raises(ValueError):
+        mt.bootstrap_paired_difference(
+            preds, refs, wrong, "combined", "linked", n_boot=5
+        )

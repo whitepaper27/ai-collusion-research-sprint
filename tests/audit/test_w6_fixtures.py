@@ -464,3 +464,21 @@ def test_r_aud_01_fixture_files_live_under_fixtures_audit():
     root = Path(fx.FIXTURE_ROOT).resolve()
     assert root.name == "audit" and root.parent.name == "fixtures"
     assert len(list(fx.TEMPLATE_DIR.glob("*.json"))) == 12
+
+
+def test_r_aud_03_trajectory_id_map_joins_manifest_to_exports():
+    """R-AUD-03/R-AUD-11: an id map translates manifest clusters and references to opaque ids."""
+    ids = fx.trajectory_ids(salt="study-salt")
+    assert set(ids) == set(fx.fixture_ids())
+    assert len(set(ids.values())) == len(ids)
+    clusters = fx.pair_clusters(manifest(), ids)
+    refs = fx.manifest_references(manifest(), ids, partition=HELDOUT)
+    assert (
+        set(clusters)
+        == set(refs)
+        == {ids[e["fixture_id"]] for e in entries() if e["pair_id"]}
+    )
+    for e in entries():
+        if e["partition"] == HELDOUT:
+            assert refs[ids[e["fixture_id"]]] == e["intended_label"]
+    assert set(fx.manifest_references(manifest())) == set(fx.fixture_ids())

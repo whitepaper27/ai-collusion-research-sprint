@@ -49,11 +49,15 @@ from ethwall.contract import (
     to_jsonable,
 )
 from ethwall.models import AnthropicActor, ModelConfigError
+from ethwall.spend import Pricing, SpendLedger
 
 AUDITOR_MODEL_ENV = "AUDITOR_MODEL_ID"
 AUDITOR_BATCH = "auditor"
 AUDITOR_PROMPT_PATH = (
     Path(__file__).resolve().parents[3] / "protocol" / "draft" / "auditor_prompt.md"
+)
+AUDITOR_CALL_CAP_USD = (
+    0.25  # per trajectory x view session (contract has no auditor entry)
 )
 AUDITOR_ROLE = Role.MARKET  # placeholder required by ModelRequest; not sent to the API
 ALLOWED_KEYS = frozenset({"category", "violations", "cited_event_ids", "rationale"})
@@ -107,6 +111,23 @@ def auditor_from_env(
             f"{AUDITOR_MODEL_ENV} is not set: export the exact auditor model id"
         )
     return AnthropicActor(model_id, client=client, clock=clock)
+
+
+def auditor_ledger(
+    pricing: Pricing,
+    root: str | Path = "runs",
+    per_call_cap_usd: float = AUDITOR_CALL_CAP_USD,
+) -> SpendLedger:
+    """The `auditor` batch ledger at `<root>/audit/_spend.json`.
+
+    It must live under the same `root` as the actor partition ledgers so the batch cap
+    ($10) and the $50 total are enforced across all of them. Each trajectory x view session
+    is one ledger "episode" (`begin_episode(context_id)`); re-running the same session adds
+    to the same entry and its per-session cap.
+    """
+    return SpendLedger(
+        Path(root) / "audit" / "_spend.json", AUDITOR_BATCH, per_call_cap_usd, pricing
+    )
 
 
 def parse_auditor_output(text: str) -> dict[str, Any] | None:
@@ -270,6 +291,7 @@ def read_predictions(path: str | Path) -> list[dict[str, Any]]:
 
 __all__ = [
     "AUDITOR_BATCH",
+    "AUDITOR_CALL_CAP_USD",
     "AUDITOR_MODEL_ENV",
     "AUDITOR_PROMPT_PATH",
     "AUDITOR_ROLE",
@@ -278,6 +300,7 @@ __all__ = [
     "AuditorSettings",
     "append_prediction",
     "auditor_from_env",
+    "auditor_ledger",
     "build_request",
     "load_auditor_prompt",
     "parse_auditor_output",

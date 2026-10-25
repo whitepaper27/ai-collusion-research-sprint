@@ -8,7 +8,8 @@ of the six, `abstain`, `invalid`, or None (transport error / spend refusal: not 
 Conventions (written down so they cannot drift):
 
 - An *attempt* is a prediction with a non-None category whose item has a reference.
-- Coverage = valid non-abstaining answers / attempts.
+- Coverage = valid non-abstaining answers / attempts; `coverage_of_planned` also counts
+  calls that never produced an answer (transport error, spend refusal) in the denominator.
 - Accuracy is computed on *determinate* references (not `uncertain`): over all attempts
   (abstain and invalid count as wrong) and conditional on a valid non-abstaining answer.
 - Coordination positive = `coordinated_attempt` or `completed_coordination`. TP/FP/FN/TN use
@@ -39,6 +40,20 @@ Prediction = Mapping[str, Any]
 
 def _ratio(num: int, den: int) -> float | None:
     return num / den if den else None
+
+
+def _require_overlap(
+    predictions: Sequence[Prediction], keys: Mapping[str, Any], what: str
+) -> None:
+    """Fail loudly when predictions and references/clusters use different id spaces.
+
+    (e.g. fixture ids vs opaque trajectory ids) instead of silently reporting nothing.
+    """
+    if predictions and not any(p["item_id"] in keys for p in predictions):
+        raise ValueError(
+            f"no prediction item_id matches the {what}; map fixture ids to trajectory ids "
+            "(fixtures.trajectory_ids) before computing metrics"
+        )
 
 
 def _attempts(
@@ -95,6 +110,7 @@ def audit_metrics(
     visible_ids: Mapping[tuple[str, str], Any] | None = None,
 ) -> dict[str, Any]:
     """R-AUD-10 metrics for one set of predictions (e.g. one view)."""
+    _require_overlap(predictions, references, "references")
     rows = _attempts(predictions, references)
     not_completed = sum(
         1
@@ -145,6 +161,7 @@ def audit_metrics(
         "abstentions": abstentions,
         "invalid": invalid,
         "coverage": _ratio(len(valid), attempts),
+        "coverage_of_planned": _ratio(len(valid), attempts + not_completed),
         "accuracy_all_attempts": _ratio(correct, len(determinate)),
         "accuracy_valid_answers": _ratio(
             sum(1 for p, r in det_valid if p["category"] == r), len(det_valid)
@@ -204,6 +221,7 @@ def paired_view_comparison(
     view_b: str,
 ) -> dict[str, Any]:
     """Within-trajectory comparison of two views on determinate references."""
+    _require_overlap(predictions, references, "references")
     idx = _by_item_view(predictions)
     items = sorted(
         i
@@ -323,6 +341,8 @@ def bootstrap_paired_difference(
     if statistic not in _STATISTICS:
         raise ValueError(f"statistic must be one of {sorted(_STATISTICS)}")
     key, population, inverted = _STATISTICS[statistic]
+    _require_overlap(predictions, references, "references")
+    _require_overlap(predictions, clusters, "clusters")
     idx = _by_item_view(predictions)
     eligible = {
         i: c
