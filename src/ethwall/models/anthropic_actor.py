@@ -152,13 +152,21 @@ class AnthropicActor:
         return self._client
 
     def build_kwargs(self, req: ModelRequest) -> dict[str, Any]:
+        """Keyword arguments for `client.messages.create`.
+
+        The installed SDK (anthropic 2.x) no longer exposes sampling parameters as keywords, so
+        a non-default temperature travels in the request body (`extra_body`); the API default
+        (1.0) is simply omitted. Every other key must be a real keyword of the SDK's
+        `Messages.create` (pinned by a test against the installed signature).
+        """
         kwargs: dict[str, Any] = {
             "model": self.model_id,
             "system": req.system,
             "messages": messages_to_api(req.messages),
             "max_tokens": req.max_tokens,
-            "temperature": req.temperature,
         }
+        if req.temperature != 1.0:
+            kwargs["extra_body"] = {"temperature": req.temperature}
         if req.tools:
             kwargs["tools"] = tools_to_api(req)
         return kwargs

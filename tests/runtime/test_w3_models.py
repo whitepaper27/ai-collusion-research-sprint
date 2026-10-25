@@ -130,7 +130,9 @@ def test_request_maps_to_sdk_messages_and_tools():
     assert kw["model"] == "model-from-env"
     assert kw["system"] == "SYSTEM PROMPT"
     assert kw["max_tokens"] == 512
-    assert kw["temperature"] == 1.0
+    # temperature 1.0 is the API default and is omitted: the installed SDK (2.x) has no
+    # `temperature` keyword, and passing one crashed the first live run (see test_w10).
+    assert "temperature" not in kw and "extra_body" not in kw
     assert kw["messages"] == [
         {"role": "user", "content": [{"type": "text", "text": "packet text"}]},
         {
