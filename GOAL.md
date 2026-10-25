@@ -13,6 +13,9 @@ gets fixed. System design: [`ARCHITECTURE.md`](ARCHITECTURE.md). Work list: [`TA
       lines 4 and 11 still say "paused"; the owner updates them.
 - [x] **Paid runs only on the owner's explicit go.** Agents build and test in `mock`/`fixture`
       mode and never start live calls on their own.
+- [x] **Paid-run gate (2026-10-24):** no paid runs, and no paid-run planning, until the whole
+      harness is built, mock smoke and full end-to-end tests pass, and the freeze workflow is
+      verified end to end (TASKS T10 + T10b). Then the owner plans and approves paid runs.
 - [x] **Spend caps** (enforced by the harness before every paid call):
       per episode, main $1.25 and smoke/control $0.80; batches below; total $50.
 - [x] **Docker** is used for clean-room test runs and offline mock episodes
