@@ -1,0 +1,97 @@
+# guard — the TRUSTED check. Required by branch protection (see scripts/setup-github.sh).
+#
+# Why this is trustworthy when ci.yml isn't:
+#   - `pull_request_target` runs the workflow file from the BASE branch, not the PR. A PR that
+#     edits this file, ci.yml, verify.sh or agent_guard.py changes nothing about how it's judged.
+#   - The guard script and the rules are checked out from the base commit.
+#   - The PR is checked out only as data and read with `git diff`. No PR code, scripts,
+#     package installs or hooks are executed here. Keep it that way: never add a step that
+#     runs anything from the `pr/` directory. (GitHub's warning about pull_request_target is
+#     about running untrusted code with these permissions; this workflow doesn't.)
+#
+# Human approval labels:
+#   human-reviewed   approves review-tier changes (existing tests, check config, agent instructions)
+#   allow-protected  approves locked/immutable changes (the gate, CI, applied migrations)
+# A label only counts if a TRUSTED_LABELERS member applied it (repo variable, comma-separated
+# GitHub logins). Any new push removes both labels: new code needs a fresh look.
+
+name: Guard
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+concurrency:
+  group: guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write # only to remove stale approval labels
+  pull-requests: read
+
+jobs:
+  guard:
+    name: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the trusted base commit (guard + rules come from here)
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Check out the PR as data only (never executed)
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve human-approval labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          ACTION: ${{ github.event.action }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          TRUSTED: ${{ vars.TRUSTED_LABELERS }}
+        run: |
+          set -euo pipefail
+          allow=0; reviewed=0
+          has() { echo "$LABELS" | jq -e --arg l "$1" 'index($l) != null' >/dev/null; }
+          for l in allow-protected human-reviewed; do
+            has "$l" || continue
+            if [ "$ACTION" = "synchronize" ]; then
+              gh api -X DELETE "repos/$REPO/issues/$PR/labels/$l" >/dev/null || true
+              echo "::notice::Removed '$l': new commits need a fresh human review."
+              continue
+            fi
+            actor="$(gh api "repos/$REPO/issues/$PR/events" --paginate \
+              --jq "[.[] | select(.event==\"labeled\" and .label.name==\"$l\")] | last | .actor.login // empty" | tail -n1)"
+            if [ -z "${TRUSTED:-}" ]; then
+              echo "::warning::TRUSTED_LABELERS is not set, so '$l' (applied by $actor) is accepted from anyone with triage access. Set it: Settings → Variables → Actions."
+              ok=1
+            else
+              ok=0
+              IFS=',' read -ra people <<< "$TRUSTED"
+              for p in "${people[@]}"; do [ "$(echo "$p" | xargs)" = "$actor" ] && ok=1; done
+              [ "$ok" = 1 ] || echo "::warning::'$l' was applied by '$actor', who is not in TRUSTED_LABELERS — ignored."
+            fi
+            if [ "$ok" = 1 ]; then
+              [ "$l" = allow-protected ] && allow=1
+              [ "$l" = human-reviewed ] && reviewed=1
+            fi
+          done
+          echo "AGENT_GUARD_ALLOW=$allow" >> "$GITHUB_ENV"
+          echo "AGENT_GUARD_REVIEWED=$reviewed" >> "$GITHUB_ENV"
+
+      - name: Guard (trusted script, trusted rules, PR read as a diff)
+        run: >
+          python3 trusted/scripts/agent_guard.py
+          --diff "${{ github.event.pull_request.base.sha }}"
+          --repo pr
+          --rules trusted/.agent/protected.txt

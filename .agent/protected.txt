@@ -1,0 +1,78 @@
+# Protected paths — read by scripts/agent_guard.py.
+# The copy on your BASE branch is the one CI enforces (.github/workflows/guard.yml), so a PR
+# can't loosen these rules for itself.
+#
+#   locked <glob>     agents may not add, edit or delete            → label `allow-protected`
+#   immutable <glob>  existing files (on base) can't be edited or deleted; new files are fine
+#                                                                    → label `allow-protected`
+#   review <glob>     existing files may be edited, but a human must look
+#                     (locally: you get a prompt; in CI: label `human-reviewed`)
+#
+# Files a branch created itself are never "existing" — agents can freely edit their own new
+# tests and new migrations until they merge.
+#
+# Globs: `*` matches across directories; a leading `**/` also matches at the repo root.
+# Strictest matching tier wins.
+
+# --- the gate: what judges the work ---------------------------------------------------------
+locked .github/**
+locked .agent/**
+locked .claude/settings.json
+locked scripts/verify.sh
+locked scripts/agent_guard.py
+locked scripts/stop-verify.sh
+locked scripts/py.sh
+# test-runner config decides which tests run at all
+locked **/vitest.config.*
+locked **/vitest.workspace.*
+locked **/jest.config.*
+locked **/playwright.config.*
+locked **/pytest.ini
+locked **/.coveragerc
+locked **/conftest.py
+# (package.json check scripts and pyproject [tool.pytest|ruff|mypy|pyright|coverage] are
+#  checked structurally by the guard — no glob needed)
+
+# --- security-critical tests: add yours here as locked, e.g. ---------------------------------
+# locked tests/security/**
+# locked **/*.authz.test.*
+
+# --- test oracles: editable with human review ------------------------------------------------
+review **/*.test.*
+review **/*.spec.*
+review **/__tests__/**
+review **/test_*.py
+review **/*_test.py
+review **/*_test.go
+review **/__snapshots__/**
+review **/e2e/**
+
+# --- static-check config: loosening it is weakening a check ----------------------------------
+review **/tsconfig*.json
+review **/eslint.config.*
+review **/.eslintrc*
+review **/biome.json
+review **/biome.jsonc
+review **/ruff.toml
+review **/.ruff.toml
+review **/mypy.ini
+review **/pyrightconfig.json
+
+# --- agent instructions: a bad lesson becomes every future agent's rule ----------------------
+review AGENTS.md
+review CLAUDE.md
+review .claude/skills/**
+review .claude/agents/**
+
+# --- history you must not rewrite ------------------------------------------------------------
+immutable **/migrations/**
+immutable **/alembic/versions/**
+immutable **/prisma/migrations/**
+immutable **/drizzle/*.sql
+
+# --- research integrity (sol.md §11–12): evidence and frozen protocol ------------------------
+review sol.md
+review GOAL.md
+review fixtures/**
+immutable protocol/frozen/**
+immutable runs/**

@@ -1,0 +1,75 @@
+# CI — runs the PR's own code, so treat it as UNTRUSTED:
+#   - `pull_request` (not pull_request_target): no repo secrets, read-only token
+#   - checkout doesn't persist credentials, so install scripts can't reuse the token
+#   - never add secrets or deploy steps to this workflow
+# Its job is "does the code work". Whether the oracle was tampered with is decided by
+# guard.yml, which runs from the base branch and can't be edited by a PR.
+
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    # The job name is what branch protection requires: keep it "verify".
+    name: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # The guard runs in guard.yml (trusted). Running the PR's own copy here would prove nothing.
+      VERIFY_SKIP_GUARD: "1"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      # ---- JS / TS ----
+      - uses: actions/setup-node@v6
+        if: hashFiles('package.json') != '' && hashFiles('.nvmrc') != ''
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/setup-node@v6
+        if: hashFiles('package.json') != '' && hashFiles('.nvmrc') == ''
+        with:
+          node-version: lts/*
+      - name: Install JS dependencies
+        if: hashFiles('package.json') != ''
+        run: |
+          corepack enable || true
+          if   [ -f pnpm-lock.yaml ]; then (command -v pnpm || npm i -g pnpm) && pnpm install --frozen-lockfile
+          elif [ -f yarn.lock ];      then yarn install --frozen-lockfile
+          elif [ -f package-lock.json ]; then npm ci
+          else npm install; fi
+      - name: Install Playwright browsers
+        if: hashFiles('playwright.config.*') != ''
+        run: npx playwright install --with-deps
+
+      # ---- Python ----
+      - uses: astral-sh/setup-uv@v6
+        if: hashFiles('pyproject.toml') != ''
+      - name: Install Python dependencies
+        if: hashFiles('pyproject.toml') != ''
+        run: uv sync --all-extras --dev
+
+      # ---- The gate: same script agents run locally ----
+      - name: verify.sh
+        run: ./scripts/verify.sh
+
+      - name: Upload verify logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-logs
+          path: .verify-logs/
+          retention-days: 7

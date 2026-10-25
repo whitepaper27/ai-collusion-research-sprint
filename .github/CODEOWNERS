@@ -1,0 +1,14 @@
+# Changes to the gate need a human owner's review (when you have reviewers beyond yourself,
+# turn on "Require review from Code Owners" — scripts/setup-github.sh --reviews 1 does this).
+# Owner: @ssoni41.
+
+/.github/              @ssoni41
+/.agent/               @ssoni41
+/.claude/settings.json @ssoni41
+/scripts/verify.sh     @ssoni41
+/scripts/agent_guard.py @ssoni41
+/scripts/stop-verify.sh @ssoni41
+/AGENTS.md             @ssoni41
+/scripts/py.sh          @ssoni41
+/GOAL.md                @ssoni41
+/sol.md                 @ssoni41
