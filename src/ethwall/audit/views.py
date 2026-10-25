@@ -10,7 +10,7 @@ Views (one event numbering per trajectory, shared by all four views, so citation
 - `messages`: every submitted inter-agent message (sender, recipient, round, text), whether or
   not it was delivered. No tool outcomes, no deliveries, no duty reports.
 - `actions`: packet deliveries, source reads, denied read/list or schema-invalid attempts
-  (`action_denied`: tool name plus only a requested doc id or store), message
+  (`action_denied`: tool name plus only a requested doc id or store; see below), message
   submission/delivery/block metadata WITHOUT text, retrieval requests/outcomes, order and
   article submissions (structured order arguments and claims) and outcomes, tool denials,
   price advances, and the record's terminal state. No message bodies, no duty reports.
@@ -29,6 +29,12 @@ never their reasons), DUTY_REPORT_SUBMITTED
 call ids, service submission ids (MSG-0001 ...), seeds and labels are replaced by opaque
 `E###` ids. Every view carries the same authoritative sources (world documents and release
 records) and the same `POLICY_TEXT` (R-AUD-07).
+
+Denied-attempt arguments are copied from the agent's own proposal, so they are agent text:
+`doc_id` is exported only when it is a real document id of this world, and `store` only when
+it is a `Store` value. Anything else (free prose, an invented id) is replaced by the fixed
+marker `<unrecognized:len=N>` (N = its length), so agent free text never reaches the actions
+view and an unrecognized value creates no link.
 
 Imperfect blinding (disclosed, sol.md §10): outcome events keep their `rule_id` because it is
 evidence; a `PROV_*` rule id reveals that provenance enforcement was active. Shared event
@@ -59,6 +65,7 @@ from ethwall.contract import (
     Event,
     EventKind,
     Mode,
+    Store,
     View,
     World,
     canonical_json,
@@ -204,6 +211,12 @@ def _sources(world: World) -> dict[str, Any]:
 # with the proposed tool name and only these structured, text-free arguments.
 _DENIED_RULES = frozenset({ENT_READ_DENIED, SCHEMA_INVALID})
 _SAFE_DENIED_ARGS = {"read_document": ("doc_id",), "list_documents": ("store",)}
+_STORE_VALUES = frozenset(s.value for s in Store)
+
+
+def unrecognized_marker(value: str) -> str:
+    """The fixed stand-in for an agent-supplied argument that is not a known id/value."""
+    return f"<unrecognized:len={len(value)}>"
 
 
 class _Index:
@@ -218,6 +231,7 @@ class _Index:
             str, Mapping[str, Any]
         ] = {}  # call id -> TOOL_PROPOSED payload
         self.terminal: str | None = None
+        self.doc_ids = frozenset(d.doc_id for d in world.documents)
         rnd, n = 1, 0
         for e in events:
             self.round[e.seq] = rnd
@@ -246,6 +260,11 @@ class _Index:
             and p["rule_id"] in _DENIED_RULES
             and p["ref_id"] in self.proposals
         )
+
+    def denied_arg(self, key: str, value: str) -> str:
+        """A denied attempt's argument if it is a known doc id / store, else the marker."""
+        known = self.doc_ids if key == "doc_id" else _STORE_VALUES
+        return value if value in known else unrecognized_marker(value)
 
     def ref(self, submission_id: str) -> str | None:
         return self.sub_eid.get(submission_id)
@@ -373,7 +392,7 @@ def _item(e: Event, view: View, ix: _Index) -> dict[str, Any] | None:
         raw = prop.get("args")
         args: Mapping[str, Any] = raw if isinstance(raw, Mapping) else {}
         safe = {
-            key: args[key]
+            key: ix.denied_arg(key, args[key])
             for key in _SAFE_DENIED_ARGS.get(name, ())
             if isinstance(args.get(key), str)
         }
@@ -395,7 +414,8 @@ def derive_links(export: Mapping[str, Any]) -> list[dict[str, str]]:
     Every link restates a field already present on a visible event (an outcome's submission
     reference, a read's doc id, a delivery's doc ids, a claim's cited doc ids), so links can
     organise but never add evidence. `derive_links(combined)` is exactly the linked view's
-    `links`; `canonical_evidence_items` treats any other link as added content.
+    `links`; `canonical_evidence_items` treats any other link list (a subset, a duplicate, a
+    reordering or an extra link) as added content.
     """
     visible = visible_ids(export)
     out: list[dict[str, str]] = []
@@ -481,6 +501,30 @@ def visible_ids(export: Mapping[str, Any]) -> frozenset[str]:
 
 _PRESENTATION_KEYS = frozenset({"format", "trajectory_id", "view", "view_description"})
 _EVIDENCE_KEYS = frozenset({"record_status", "policy", "sources", "events", "links"})
+_TRAJECTORY_ID = re.compile(r"T[0-9a-f]{8}")
+
+
+def _presentation_items(export: Mapping[str, Any]) -> set[tuple[str, str, str]]:
+    """Presentation keys that are not their expected constant or format, as evidence items.
+
+    `format` must be `EXPORT_FORMAT`, `view` a view name, `view_description` exactly that
+    view's `VIEW_DESCRIPTIONS` text and `trajectory_id` an opaque `T` + 8 hex id. A deviating
+    value becomes an item carrying the value, so free text in a presentation key (a verdict in
+    the description, a label in the id) breaks equality unless both exports carry it.
+    """
+    view, tid = export.get("view"), export.get("trajectory_id")
+    desc = VIEW_DESCRIPTIONS.get(view) if isinstance(view, str) else None
+    ok = {
+        "format": export.get("format") == EXPORT_FORMAT,
+        "view": desc is not None,
+        "view_description": desc is not None and export.get("view_description") == desc,
+        "trajectory_id": isinstance(tid, str) and bool(_TRAJECTORY_ID.fullmatch(tid)),
+    }
+    return {
+        ("presentation", key, canonical_json(export.get(key)))
+        for key, good in ok.items()
+        if not good
+    }
 
 
 def canonical_evidence_items(
@@ -489,10 +533,13 @@ def canonical_evidence_items(
     """Expand an export into its set of evidence items.
 
     Events, documents, release records, policy text and record status each become one item.
-    A link that `derive_links` would produce from the export's own visible fields adds
-    nothing; any other link (extra keys, unknown type, hidden endpoint, or a well-formed but
-    underivable reference), any unknown top-level block and any extra field on an event
-    becomes an item, so it breaks equality with the combined view.
+    Links are strict: a `links` list adds nothing only if it is exactly
+    `derive_links(export)` (same canonical items, same multiplicity, same order). Any other
+    list (a curated subset, a duplicate, a reordering, extra keys, unknown types, hidden
+    endpoints or well-formed but underivable references) becomes an item, as does each
+    underivable link. Any unknown top-level block, any extra field on an event and any
+    presentation key off its expected constant/format (`_presentation_items`) also becomes an
+    item, so it breaks equality with the combined view.
     """
     items: set[tuple[str, str, str]] = set()
     items.add(("policy", "", canonical_json(export.get("policy"))))
@@ -510,10 +557,20 @@ def canonical_evidence_items(
         items.add(("event", eid, canonical_json(body)))
     for key in sorted(set(export) - _PRESENTATION_KEYS - _EVIDENCE_KEYS):
         items.add(("extra", key, canonical_json(export[key])))
-    derived = {canonical_json(x) for x in derive_links(export)}
-    for link in export.get("links", ()) or ():
-        if canonical_json(link) not in derived:
-            items.add(("link_content", "", canonical_json(link)))
+    items |= _presentation_items(export)
+    if "links" in export:
+        links = export["links"]
+        derived = [canonical_json(x) for x in derive_links(export)]
+        given = (
+            [canonical_json(x) for x in links]
+            if isinstance(links, list)
+            else [canonical_json(links)]
+        )
+        if given != derived:
+            items.add(("links_not_derived", "", canonical_json(links)))
+        for link in given:
+            if link not in derived:
+                items.add(("link_content", "", link))
     return frozenset(items)
 
 

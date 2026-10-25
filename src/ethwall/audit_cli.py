@@ -7,10 +7,16 @@
     ethwall audit report --predictions audit/heldout.jsonl --references fixtures:heldout \
                          --exports review/fixture-heldout --out analysis/audit-heldout
 
-Exports go to `<out>/<trajectory id>/<view>.json` with opaque ids. The id map and salt that join
-them back to fixtures or runs are written to `<out>/_private/` and must never be shown to the
-auditor or used while labelling. Live auditor calls need `--confirm-spend`, AUDITOR_MODEL_ID,
-ANTHROPIC_API_KEY and the pricing basis; spend goes to the `auditor` batch under `spend/`.
+Exports are written to `<out>.staging/<trajectory id>/<view>.json` with opaque ids and promoted
+(renamed) to `<out>` only after the leak check: never with blocking hits; with review hits
+(generic terms inside agent-authored text, live only) only under `--ack-review`, after a human
+has triaged them. Review hits are never redacted (that would change evidence). Every hit is
+printed and saved, with the id map and salt that join exports back to fixtures or runs, in the
+private dir: `<out>/_private/` by default, or `--private-out` to keep it outside the export
+tree (`audit report --private-dir` reads it from there). Private files must never be shown to
+the auditor or used while labelling. An existing `<out>`, staging or private dir is refused
+(exit 2). Live auditor calls need `--confirm-spend`, AUDITOR_MODEL_ID, ANTHROPIC_API_KEY and
+the pricing basis; spend goes to the `auditor` batch under `spend/`.
 """
 
 from __future__ import annotations
@@ -26,6 +32,7 @@ from typing import Any
 from ethwall.contract import (
     AUDIT_ABSTAIN,
     CoordLabel,
+    EventKind,
     Mode,
     ModelRequest,
     ModelResponse,
@@ -73,7 +80,7 @@ def _write_exports(out: Path, tid: str, exports: Mapping[str, Any]) -> None:
     from ethwall.audit import render_packet
 
     d = out / tid
-    d.mkdir(parents=True, exist_ok=False)
+    d.mkdir(exist_ok=False)
     for view, export in exports.items():
         (d / f"{view}.json").write_text(
             json.dumps(export, sort_keys=True, indent=1), encoding="utf-8"
@@ -94,6 +101,7 @@ def cmd_export_review(argv: list[str]) -> int:
         opaque_trajectory_id,
     )
     from ethwall.audit.views import leak_report
+    from ethwall.cli import UsageError
     from ethwall.world import build_world
 
     p = argparse.ArgumentParser(prog="ethwall export-review")
@@ -102,12 +110,29 @@ def cmd_export_review(argv: list[str]) -> int:
     src.add_argument("--partition")
     p.add_argument("--runs-root", default="runs")
     p.add_argument("--out", required=True)
+    p.add_argument(
+        "--private-out",
+        default=None,
+        help="dir for id_map.json and leak_review.json (default: <out>/_private)",
+    )
     p.add_argument("--salt", default=None)
+    p.add_argument(
+        "--ack-review",
+        action="store_true",
+        help="promote despite generic-term hits in agent text (after human triage)",
+    )
     a = p.parse_args(argv)
     out = Path(a.out)
+    staging = out.with_name(out.name + ".staging")
+    private = _private_dir(out, staging, a.private_out)
+    for path in (out, staging, private):
+        if path.exists():
+            raise UsageError(f"{path} already exists; refusing to mix exports")
+    staging.mkdir(parents=True)
     salt = a.salt or secrets.token_hex(8)
     id_map: dict[str, str] = {}
     blocking: list[str] = []
+    review: list[str] = []
     if a.fixtures:
         part = f"fixture-{a.fixtures}"
         wanted = {
@@ -124,33 +149,92 @@ def cmd_export_review(argv: list[str]) -> int:
                 blocking += [
                     f"{tid}: {x}" for x in leak_check(export, extra_terms=(fid, salt))
                 ]
-            _write_exports(out, tid, exports)
+            _write_exports(staging, tid, exports)
             id_map[tid] = fid
     else:
         base = Path(a.runs_root) / a.partition
         for run_dir in sorted(
             x for x in base.iterdir() if x.is_dir() and not x.name.startswith("_")
         ):
-            events, manifest = load_run(run_dir)
+            events, _ = load_run(run_dir)
             tid = opaque_trajectory_id(run_dir.name, salt=salt)
             exports = export_all_views(
-                events, build_world(manifest["seed"]), trajectory_id=tid
+                events, build_world(_recorded_seed(events, run_dir)), trajectory_id=tid
             )
             for export in exports.values():
                 report = leak_report(export, extra_terms=(run_dir.name, salt))
                 blocking += [f"{tid}: {x}" for x in report["blocking"]]
-            _write_exports(out, tid, exports)
+                review += [f"{tid}: {x}" for x in report["review"]]
+            _write_exports(staging, tid, exports)
             id_map[tid] = run_dir.name
-    private = out / "_private"
-    private.mkdir(parents=True, exist_ok=True)
+    private.mkdir(parents=True, exist_ok=False)
     (private / "id_map.json").write_text(
         json.dumps({"salt": salt, "items": id_map}, sort_keys=True, indent=1),
         encoding="utf-8",
     )
+    (private / "leak_review.json").write_text(
+        json.dumps(
+            {"blocking": blocking, "review": review, "acked": a.ack_review},
+            sort_keys=True,
+            indent=1,
+        ),
+        encoding="utf-8",
+    )
     for b in blocking:
         print(f"LEAK {b}")
-    print(f"exported {len(id_map)} trajectories x {len(VIEWS)} views to {out}")
-    return 1 if blocking else 0
+    for r in review:
+        print(f"REVIEW {r}")
+    n = f"{len(id_map)} trajectories x {len(VIEWS)} views"
+    if blocking or (review and not a.ack_review):
+        why = (
+            "blocking leaks"
+            if blocking
+            else "unacknowledged review hits (--ack-review)"
+        )
+        print(f"NOT PROMOTED ({why}): {n} left in {staging} for triage")
+        return 1
+    staging.rename(out)
+    print(f"exported {n} to {out}")
+    return 0
+
+
+def _private_dir(out: Path, staging: Path, private_out: str | None) -> Path:
+    """Where id_map.json and leak_review.json go (in staging while exports are unchecked).
+
+    Default `<out>/_private` (kept for existing callers; it is promoted with the exports).
+    With `--private-out` outside `<out>` the private files never enter the export tree.
+    """
+    if private_out is None:
+        return staging / "_private"
+    from ethwall.cli import UsageError
+
+    path = Path(private_out).resolve()
+    root = out.resolve()
+    if path == root:
+        raise UsageError("--private-out must not be the export dir itself")
+    if root in path.parents:
+        return staging / path.relative_to(root)
+    return path
+
+
+def _recorded_seed(events: Any, run_dir: Path) -> int:
+    """The world seed from the recorded RUN_START manifest (then manifest.json)."""
+    from ethwall.cli import UsageError
+
+    for e in events:
+        m = e.payload.get("manifest") if e.kind == EventKind.RUN_START else None
+        seed = m.get("seed") if isinstance(m, Mapping) else None
+        if isinstance(seed, int) and not isinstance(seed, bool):
+            return seed
+    path = run_dir / "manifest.json"
+    seed = (
+        json.loads(path.read_text(encoding="utf-8")).get("seed")
+        if path.is_file()
+        else None
+    )
+    if not isinstance(seed, int) or isinstance(seed, bool):
+        raise UsageError(f"{run_dir}: no integer seed in the recorded manifest")
+    return seed
 
 
 # ----------------------------------------------------------------------------- label
@@ -273,8 +357,11 @@ def audit_report(argv: list[str]) -> int:
     p.add_argument(
         "--references", required=True, help="fixtures:dev|heldout or labels:<path>"
     )
+    p.add_argument("--exports", required=True, help="the export dir")
     p.add_argument(
-        "--exports", required=True, help="export dir (for its _private/id_map.json)"
+        "--private-dir",
+        default=None,
+        help="dir holding id_map.json (default: <exports>/_private)",
     )
     p.add_argument("--source", choices=["fixture", "live"], default="fixture")
     p.add_argument("--stamp", default=None)
@@ -283,7 +370,8 @@ def audit_report(argv: list[str]) -> int:
     preds = read_predictions(a.predictions)
     kind, _, arg = a.references.partition(":")
     if kind == "fixtures":
-        id_map = json.loads((Path(a.exports) / "_private" / "id_map.json").read_text())[
+        private = Path(a.private_dir or Path(a.exports) / "_private")
+        id_map = json.loads((private / "id_map.json").read_text(encoding="utf-8"))[
             "items"
         ]
         by_fid = {fid: tid for tid, fid in id_map.items()}

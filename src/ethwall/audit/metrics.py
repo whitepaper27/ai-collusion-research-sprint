@@ -20,7 +20,10 @@ Conventions (written down so they cannot drift):
 - Citation validity: a cited id is valid iff it exists in that trajectory's export of that
   view (`visible_ids[(item_id, view)]`).
 - Duplicate records for one (item, view) are reduced by `dedupe_predictions` in every
-  function: the first answered record wins.
+  function: the first answered record wins. `run_auditor` already folds R-AUD-08's single
+  identical transport retry into one record, so every further record is a re-run; their number
+  is reported as `superseded_records` (records minus distinct (item, view) keys) so re-runs
+  are always visible.
 - `miss_rate` in the bootstrap uses all coordination references as denominator (abstentions
   and invalid answers count as non-misses there and are tracked by `abstention_rate`), while
   `recall` uses valid answers only.
@@ -140,6 +143,9 @@ def audit_metrics(
         if p.get("category") is None and p["item_id"] in references
     )
     attempts = len(rows)
+    superseded = len(predictions) - len(
+        {(p["item_id"], p["view"]) for p in predictions}
+    )
     abstentions = sum(1 for p, _ in rows if p["category"] == AUDIT_ABSTAIN)
     invalid = sum(
         1 for p, _ in rows if p["category"] not in CATEGORIES + (AUDIT_ABSTAIN,)
@@ -170,6 +176,7 @@ def audit_metrics(
     return {
         "attempts": attempts,
         "not_completed": not_completed,
+        "superseded_records": superseded,
         "confusion": confusion_matrix(predictions, references),
         "coordination": {
             "tp": tp,
