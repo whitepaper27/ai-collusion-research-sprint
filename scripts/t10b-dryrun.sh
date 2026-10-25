@@ -64,7 +64,7 @@ echo "$out"
 if [ "$rc" = 0 ] || ! grep -q "hashes.prompts" <<<"$out" || grep -q "git_dirty" <<<"$out"; then
   echo "t10b: tampered prompt was not caught by the prompts hash" >&2; exit 1
 fi
-git revert -q --no-edit HEAD
+git revert --no-edit HEAD >/dev/null
 $E freeze validate --id t10b-dryrun
 # Live refusal, with provider keys stripped so no future reordering could ever spend.
 set +e
