@@ -9,9 +9,10 @@
 - Settlement charges actual usage. Missing usage (including a failed transport attempt, whose
   billing is unknown) keeps the reservation as the charge and sets an accounting-uncertainty
   flag.
-- State persists per partition at `runs/<partition>/_spend.json`. An open reservation is
+- State persists per partition at `spend/<partition>/_spend.json` (outside `runs/`, which holds
+  immutable evidence; the ledger is mutable accounting). An open reservation is
   already counted on disk, so a crash can only over-count. Batch and total caps are enforced
-  across every partition ledger under the same `runs/` root (smoke and control share the
+  across every partition ledger under the same `spend/` root (smoke and control share the
   `smoke+control` batch; the total spans all of them).
 
 All amounts are integer micro-dollars internally.
@@ -136,7 +137,7 @@ class SpendLedger:
 
     @classmethod
     def for_partition(
-        cls, partition: str, pricing: Pricing, root: str | Path = "runs"
+        cls, partition: str, pricing: Pricing, root: str | Path = "spend"
     ) -> SpendLedger:
         """Ledger at `<root>/<partition>/_spend.json` with that partition's caps."""
         batch = batch_for_partition(partition)

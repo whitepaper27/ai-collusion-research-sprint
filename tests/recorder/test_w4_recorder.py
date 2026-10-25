@@ -317,7 +317,7 @@ def test_append_validates_payload_and_closed_recorder_refuses(tmp_path):
 
 def test_close_writes_run_end_checkpoint_and_partition_index(tmp_path):
     """R-REC-03: RUN_END{terminal_state, counts} then CHECKPOINT{run_id, n_events, head_hash};
-    the same triple is appended to runs/<partition>/_index.jsonl."""
+    the same triple is written to runs/<partition>/_index/<run_id>.json (one file per run)."""
     counts = {
         "decisions": 1,
         "transport_attempts": 1,
@@ -342,9 +342,13 @@ def test_close_writes_run_end_checkpoint_and_partition_index(tmp_path):
         }
         entries.append(dict(cp.payload))
         assert verify_run(run_dir, KEY) == ()
-    index = tmp_path / "mock-w4" / "_index.jsonl"
-    lines = index.read_text(encoding="utf-8").splitlines()
-    assert [json.loads(x) for x in lines] == entries
+    index_dir = tmp_path / "mock-w4" / "_index"
+    written = [
+        json.loads((index_dir / f"{r}.json").read_text(encoding="utf-8"))
+        for r in ("r3a", "r3b")
+    ]
+    assert written == entries
+    assert sorted(p.name for p in index_dir.iterdir()) == ["r3a.json", "r3b.json"]
 
 
 # ----------------------------------------------------------------------------- clean controls
@@ -472,8 +476,8 @@ def test_checkpoint_count_or_head_mismatch_is_truncated(tmp_path):
 def test_index_disagreement_is_index_mismatch(tmp_path):
     """R-REC-10: the run disagrees with its partition index entry (or has none)."""
     run_dir = make_run(tmp_path)
-    index = run_dir.parent / "_index.jsonl"
-    entry = json.loads(index.read_text(encoding="utf-8").splitlines()[0])
+    index = run_dir.parent / "_index" / f"{run_dir.name}.json"
+    entry = json.loads(index.read_text(encoding="utf-8"))
     assert verify_run(run_dir, KEY) == ()
     assert verify_run(run_dir, KEY, index=entry) == ()
     wrong = {**entry, "n_events": entry["n_events"] - 1}

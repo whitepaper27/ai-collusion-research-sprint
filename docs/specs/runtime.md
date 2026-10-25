@@ -69,7 +69,8 @@ network.
   up; if it doesn't fit the episode cap or the batch cap, don't call.
 - **R-SPD-03** Settle against actual usage; missing usage keeps the reservation as the charge and
   sets an accounting-uncertainty flag.
-- **R-SPD-04** The ledger persists per partition (`runs/<partition>/_spend.json`) and enforces:
+- **R-SPD-04** The ledger persists per partition (`spend/<partition>/_spend.json`, outside the
+  immutable `runs/`) and enforces:
   per episode main $1.25, smoke/control $0.80; batches smoke+control $8, main $25, auditor
   $10, reserve $7; total $50.
 - **R-SPD-05** Mock and fixture modes cost 0 and never touch the network.

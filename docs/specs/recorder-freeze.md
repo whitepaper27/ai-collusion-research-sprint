@@ -16,7 +16,8 @@ Design reuse (not code): hash chain + checkpoint + independent verifier from
 - **R-REC-02** Every append validates the payload keys required for its kind; a closed recorder
   refuses appends.
 - **R-REC-03** `close(status, ...)` writes `RUN_END` then `CHECKPOINT{run_id, n_events,
-  head_hash}` and appends the same triple to `runs/<partition>/_index.jsonl`.
+  head_hash}` and writes the same triple to `runs/<partition>/_index/<run_id>.json` (one new file
+  per run, never an append, so evidence under `runs/` is only ever added).
 - **R-REC-04** `verify` reports `ALTERED` when any byte of a recorded event changes.
 - **R-REC-05** `BAD_SIG` when verified with the wrong key.
 - **R-REC-06** `REPLAY` for a duplicated event or an event with a foreign `run_id`.

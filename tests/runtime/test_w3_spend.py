@@ -171,7 +171,7 @@ def test_settle_without_reservation_is_an_error(tmp_path):
 
 
 def test_ledger_persists_per_partition_and_reloads(tmp_path):
-    """R-SPD-04: the ledger persists at runs/<partition>/_spend.json and survives reloads;
+    """R-SPD-04: the ledger persists at <root>/<partition>/_spend.json (default root spend/) and survives reloads;
     an open reservation is already counted on disk."""
     led = ledger(tmp_path, "smoke")
     assert led.path == tmp_path / "smoke" / "_spend.json"

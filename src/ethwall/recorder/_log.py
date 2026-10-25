@@ -31,7 +31,8 @@ from ethwall.contract import (
 )
 
 EVENTS_FILE = "events.jsonl"
-INDEX_FILE = "_index.jsonl"
+INDEX_DIR = "_index"  # one file per run: runs/<partition>/_index/<run_id>.json
+INDEX_FILE = INDEX_DIR  # kept for import compatibility
 KEY_ENV = "ETHWALL_RECORDER_KEY"
 MOCK_KEY = b"ethwall-mock-key"
 MOCK_KEY_ID = "mock-fixed"
@@ -55,7 +56,9 @@ class JsonlRecorder:
     Hashing and signing match `ethwall.testing.MemoryRecorder` exactly: `hash` is
     `event_hash(event.body())` (SHA-256 of the canonical event without hash/sig), the chain starts
     at `GENESIS`, and `sig = sign(key, hash)` (HMAC-SHA256). `close()` appends the checkpoint
-    triple to `<run_dir.parent>/_index.jsonl` (the partition index).
+    triple to `<run_dir.parent>/_index/<run_id>.json` (the partition index). One new file per
+    run, never an append, so committed evidence under `runs/` is only ever added (runs/** is
+    immutable in .agent/protected.txt).
     """
 
     def __init__(
@@ -77,7 +80,7 @@ class JsonlRecorder:
         self._events: list[Event] = []
         self._closed = False
         self.path = self.run_dir / EVENTS_FILE
-        self.index_path = self.run_dir.parent / INDEX_FILE
+        self.index_path = self.run_dir.parent / INDEX_DIR / f"{run_id}.json"
         # 'x': never append onto an existing log (R-REC-15).
         with open(self.path, "x", encoding="utf-8", newline="\n"):
             pass
@@ -141,7 +144,9 @@ class JsonlRecorder:
         }
         checkpoint = self.append(EventKind.CHECKPOINT, "RECORDER", triple)
         self._closed = True
-        _append_line(self.index_path, canonical_json(triple))
+        self.index_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.index_path, "x", encoding="utf-8") as f:  # never overwrite
+            f.write(canonical_json(triple) + "\n")
         return checkpoint
 
     def events(self) -> tuple[Event, ...]:

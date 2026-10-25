@@ -67,7 +67,7 @@ from ethwall.contract import (
     sha256_hex,
     sign,
 )
-from ethwall.recorder._log import EVENTS_FILE, INDEX_FILE
+from ethwall.recorder._log import EVENTS_FILE, INDEX_DIR
 
 ALTERED = "ALTERED"
 BAD_SIG = "BAD_SIG"
@@ -423,7 +423,7 @@ def verify_run(
 ) -> tuple[str, ...]:
     """Verify `run_dir/events.jsonl` and its partition index; empty tuple = clean.
 
-    `index`: None reads `<run_dir.parent>/_index.jsonl`; a path reads that index file; a mapping
+    `index`: None reads `<run_dir.parent>/_index/<run_id>.json`; a path reads that index file; a mapping
     is used directly as the run's index entry. Never raises on malformed input: unparseable
     lines are ALTERED, a missing log is TRUNCATED.
     """
@@ -436,6 +436,10 @@ def verify_run(
     if isinstance(index, Mapping):
         entries: list[Mapping[str, Any]] = [index]
     else:
-        index_path = Path(index) if index is not None else run_dir.parent / INDEX_FILE
+        index_path = (
+            Path(index)
+            if index is not None
+            else run_dir.parent / INDEX_DIR / f"{run_id}.json"
+        )
         entries = _read_index(index_path, run_id)
     return _verify(events, key, entries, parse_failed=failed)
