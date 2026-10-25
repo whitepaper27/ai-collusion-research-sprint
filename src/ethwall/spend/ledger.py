@@ -170,7 +170,9 @@ else:
 REPLACE_ATTEMPTS = 20
 
 
-def _replace_with_retry(src: Path, dst: Path, *, attempts: int = REPLACE_ATTEMPTS) -> None:
+def _replace_with_retry(
+    src: Path, dst: Path, *, attempts: int = REPLACE_ATTEMPTS
+) -> None:
     """`os.replace` that rides out transient Windows sharing violations.
 
     On Windows another process (antivirus, the search indexer) can hold the target open for a

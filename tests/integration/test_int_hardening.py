@@ -86,7 +86,9 @@ def test_spend_ledger_does_not_dirty_the_tree(tmp_path):
 def test_spend_is_gitignored():
     """R-SPD-04: the mutable ledger is never committed."""
     lines = (default_repo_root() / ".gitignore").read_text().splitlines()
-    assert "spend/" in lines
+    # anchored to the repo root, so it never matches the src/ethwall/spend package
+    assert "/spend/" in lines
+    assert "spend/" not in lines
 
 
 def test_default_roots_are_repo_anchored():
