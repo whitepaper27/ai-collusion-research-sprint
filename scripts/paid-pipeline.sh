@@ -129,7 +129,7 @@ stage_controls_finish() {
   for spec in ${CONTROLS_TODO:-baseline:151 guarded:151 guarded:150}; do
     cond="${spec%%:*}"; seed="${spec##*:}"
     $E run --mode live --confirm-spend --partition "$CONTROL_PART" --control \
-      --condition "$cond" --seeds "$seed"
+      --condition "$cond" --seeds "$seed" || echo "controls: $cond $seed ended interrupted (recorded)"
   done
   $E verify --partition "$CONTROL_PART" || true
 }
@@ -205,7 +205,10 @@ stage_main() {
   cat "$logs"/main-*.log
   rm -rf "$logs"
   $E verify --partition main || rc=1
-  return "$rc"
+  # An interrupted episode is a recorded outcome (unknown endpoints), not a reason to stop
+  # the remaining stages.
+  [ "$rc" = 0 ] || echo "main: some episodes interrupted or faulted (recorded; see verify above)"
+  return 0
 }
 
 stage_audit_main() {

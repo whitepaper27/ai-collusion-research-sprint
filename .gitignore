@@ -18,7 +18,7 @@ __pycache__/
 .worktrees/
 
 # mutable spend ledger (accounting, not evidence)
-spend/
+/spend/
 
 # audit-study private maps and unpromoted exports (never shown to the auditor or labeller)
 *.private/

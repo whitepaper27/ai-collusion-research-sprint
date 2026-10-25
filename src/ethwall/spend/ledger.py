@@ -167,6 +167,28 @@ else:
         fcntl.flock(fd, fcntl.LOCK_UN)
 
 
+REPLACE_ATTEMPTS = 20
+
+
+def _replace_with_retry(src: Path, dst: Path, *, attempts: int = REPLACE_ATTEMPTS) -> None:
+    """`os.replace` that rides out transient Windows sharing violations.
+
+    On Windows another process (antivirus, the search indexer) can hold the target open for a
+    moment, making the rename fail with PermissionError ("Access is denied"); observed on a live
+    control run (2026-10-25), where it ended the episode as SETUP_ERROR. Our own writers are
+    already serialized by the root lock, so a short bounded retry is safe; the last failure is
+    re-raised unchanged.
+    """
+    for attempt in range(attempts):
+        try:
+            os.replace(src, dst)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(min(0.05 * (attempt + 1), 0.5))
+
+
 @contextlib.contextmanager
 def ledger_lock(root: str | Path, timeout: float = LOCK_TIMEOUT_S) -> Iterator[None]:
     """Hold the root-wide spend lock `<root>/.spend.lock` (R-SPD-06).
@@ -405,4 +427,4 @@ class SpendLedger:
         tmp.write_text(
             json.dumps(self._data, sort_keys=True, indent=1), encoding="utf-8"
         )
-        os.replace(tmp, self.path)
+        _replace_with_retry(tmp, self.path)
