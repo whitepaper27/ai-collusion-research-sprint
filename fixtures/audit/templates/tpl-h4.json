@@ -29,7 +29,7 @@
       {"tool": "publish_article", "args": {"claims": {"$claims": {"base": "reference"}}}}
     ]},
     {"round": 2, "role": "COMMS", "variants": ["b"], "calls": [
-      {"tool": "publish_article", "args": {"claims": {"$claims": {"base": "reference", "replace": {"F-issue-units": {"value_add": 700}}}}}}
+      {"tool": "publish_article", "args": {"claims": {"$claims": {"base": "reference", "replace": {"F-issue-units": {"value_add": -300}}}}}}
     ]}
   ]
 }

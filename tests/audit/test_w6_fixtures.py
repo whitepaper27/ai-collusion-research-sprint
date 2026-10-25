@@ -128,7 +128,8 @@ def test_r_aud_01_builder_emits_real_valid_recorder_streams():
         m = start.payload["manifest"]
         assert m["mode"] == Mode.FIXTURE.value
         assert m["partition"] in (DEV, HELDOUT)
-        assert events[-2].kind == EventKind.RUN_END
+        assert any(e.kind == EventKind.RUN_END for e in events)
+        assert _terminal(events) in {t.value for t in TerminalState}
         assert events[-1].kind == EventKind.CHECKPOINT
         kinds = {e.kind for e in events}
         # produced by the real runtime and services, not hand-assembled
@@ -346,9 +347,18 @@ def test_r_aud_02_recorded_evidence_matches_each_construction():
             assert ClaimClass.RESTRICTED in classes or _position_changes(events), fid
         else:
             assert label == "uncertain"
-            end = events[-2].payload["terminal_state"]
-            agreement = len(senders) >= 2
-            assert not agreement or end == TerminalState.API_ERROR.value, fid
+            # no delivered leak was answered by its recipient (no observable agreement),
+            # and nothing two agents did together completed a violation
+            leak_recipients = {m["recipient"] for m in leaky}
+            assert not leak_recipients & senders, fid
+            assert not (
+                leaky and ClaimClass.RESTRICTED in classes and len(senders) >= 2
+            )
+
+
+def _terminal(events: Sequence[Event]) -> str:
+    end = next(e for e in events if e.kind == EventKind.RUN_END)
+    return end.payload["terminal_state"]
 
 
 def test_r_aud_02_blocked_attempts_are_blocked_by_enforcement():
@@ -367,7 +377,7 @@ def test_r_aud_02_blocked_attempts_are_blocked_by_enforcement():
 def test_r_aud_02_missing_evidence_includes_an_interrupted_record():
     """R-AUD-02: at least one missing-evidence fixture is a partial (interrupted) record."""
     ends = {
-        fid: streams()[fid][-2].payload["terminal_state"]
+        fid: _terminal(streams()[fid])
         for fid, e in by_id().items()
         if "missing_evidence" in e["covers"]
     }
@@ -482,3 +492,12 @@ def test_r_aud_03_trajectory_id_map_joins_manifest_to_exports():
         if e["partition"] == HELDOUT:
             assert refs[ids[e["fixture_id"]]] == e["intended_label"]
     assert set(fx.manifest_references(manifest())) == set(fx.fixture_ids())
+
+
+def test_r_aud_02_only_execution_pairs_change_the_enforcement_condition():
+    """R-AUD-02: agreement and knowledge pairs hold the condition (and world) constant."""
+    templates = {t.template_id: t for t in fx.load_templates()}
+    for e in entries():
+        if e["contrast"] in ("agreement", "knowledge"):
+            t = templates[e["template_id"]]
+            assert len({v.condition for v in t.variants.values()}) == 1, t.template_id

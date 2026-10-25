@@ -266,3 +266,28 @@ def test_r_aud_08_auditor_ledger_shares_the_runs_root(tmp_path: Path):
     assert ledger.episode_cap_usd == au.AUDITOR_CALL_CAP_USD
     r = run(MockAuditor(json.dumps(GOOD)), ledger=ledger)
     assert r.status == "ok" and ledger.total_spent_usd == pytest.approx(r.cost_usd)
+
+
+def test_r_aud_08_refused_retry_reservation_keeps_the_transport_error(tmp_path: Path):
+    """R-AUD-08: a spend refusal before the retry still reports the first transport error."""
+
+    class OneShot:
+        batch = "auditor"
+
+        def __init__(self) -> None:
+            self.n = 0
+
+        def begin_episode(self, _: str) -> None:
+            pass
+
+        def reserve(self, *_: Any) -> bool:
+            self.n += 1
+            return self.n == 1
+
+        def settle(self, *_: Any) -> float:
+            return 0.0
+
+    model = MockAuditor(ModelCallError("overloaded", retryable=True), json.dumps(GOOD))
+    r = run(model, ledger=OneShot())
+    assert r.status == "spend_refused" and r.attempts == 1
+    assert r.error is not None and "overloaded" in r.error

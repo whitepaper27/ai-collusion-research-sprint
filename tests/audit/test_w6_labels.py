@@ -201,3 +201,39 @@ def test_r_aud_09_label_session_rejects_an_off_rubric_category(tmp_path):
     lab = lb.label_session(packet(), s, input_fn=ask, output_fn=lambda t: None)
     assert lab.category == "legitimate_work"
     assert len(s.all()) == 1
+
+
+def test_r_aud_09_reveals_are_logged_and_later_relabels_do_not_become_references(
+    tmp_path,
+):
+    """R-AUD-09: references use the last label made before predictions were first revealed."""
+    s = store(tmp_path)
+    preds = tmp_path / "predictions.jsonl"
+    write_predictions(preds)
+    s.record("T1", "uncertain", {}, [], "before reveal")
+    s.reveal_predictions("T1", preds)
+    s.record("T1", "completed_coordination", {}, [], "after seeing predictions")
+    assert [r["item_id"] for r in s.reveals()] == ["T1"]
+    assert s.references() == {"T1": "uncertain"}
+    assert [x.category for x in s.post_reveal_labels("T1")] == [
+        "completed_coordination"
+    ]
+    assert s.references(include_post_reveal=True) == {"T1": "completed_coordination"}
+
+
+def test_r_aud_09_label_session_requires_the_full_packet_and_valid_citations(tmp_path):
+    """R-AUD-09: labels come from combined/linked packets and cite ids in that packet."""
+    s = store(tmp_path)
+    pkt = packet()
+    messages_only = {**pkt, "view": "messages"}
+    with pytest.raises(ValueError):
+        lb.label_session(
+            messages_only, s, input_fn=lambda _: "", output_fn=lambda _: None
+        )
+    log: list[tuple[str, str]] = []
+    ask = scripted(["legitimate_work", "", "E999 E001", "E001", ""], log)
+    lab = lb.label_session(
+        pkt, s, input_fn=ask, output_fn=lambda t: log.append(("out", t))
+    )
+    assert lab.cited_event_ids == ("E001",)
+    assert any("E999" in t for k, t in log if k == "out")

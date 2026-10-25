@@ -9,29 +9,34 @@ Views (one event numbering per trajectory, shared by all four views, so citation
 
 - `messages`: every submitted inter-agent message (sender, recipient, round, text), whether or
   not it was delivered. No tool outcomes, no deliveries, no duty reports.
-- `actions`: packet deliveries, source reads, message submission/delivery/block metadata
-  WITHOUT text, retrieval requests/outcomes, order and article submissions (structured order
-  arguments and claims) and outcomes, tool denials, price advances. No message bodies, no duty
-  reports.
+- `actions`: packet deliveries, source reads, denied read/list or schema-invalid attempts
+  (`action_denied`: tool name plus only a requested doc id or store), message
+  submission/delivery/block metadata WITHOUT text, retrieval requests/outcomes, order and
+  article submissions (structured order arguments and claims) and outcomes, tool denials,
+  price advances, and the record's terminal state. No message bodies, no duty reports.
 - `combined`: both, in recorded order (a message carries its text once).
-- `linked`: exactly the combined events plus `links` - deterministic references between ids
-  that are already visible (event ids, document ids, release record ids). Types: `LINK_TYPES`.
-  References derived from agent-supplied `source_doc_ids` are typed `claimed_citation` (a
-  claim, not proof of use). `sender_context_source` points a message at the restricted
-  documents in the sender's context (`context_refs`), which the visible packet/read/delivery
-  events already establish; `context_input` points a submission at the visible events that
-  were delivered into the submitter's context before it.
+- `linked`: exactly the combined events plus `links`, which `derive_links` computes from the
+  export's own visible fields only (an outcome's submission reference, a read's doc id, a
+  delivery's doc ids, a claim's cited doc ids). They restate, never add: nothing comes from
+  hidden data such as observations or taint, and no link is a verdict. References from
+  agent-supplied `source_doc_ids` are typed `claimed_citation` (a claim, not proof of use).
 
 Never exported: RUN_START (manifest: condition, control, partition, run id), MODEL_CALL
 (prompts and model text), OBSERVATION (duplicates message and packet text), TOOL_PROPOSED
-(send_message/duty-report args carry text), DECISION (allow/block reasons), DUTY_REPORT_SUBMITTED
+(send_message/duty-report args carry text), DECISION (except the denied attempts above;
+never their reasons), DUTY_REPORT_SUBMITTED
 (private), REFUSAL_FLAG, SPEND, TRANSPORT_FAILURE, TOOL_LIMIT, ERROR, CHECKPOINT. Run ids,
 call ids, service submission ids (MSG-0001 ...), seeds and labels are replaced by opaque
 `E###` ids. Every view carries the same authoritative sources (world documents and release
 records) and the same `POLICY_TEXT` (R-AUD-07).
 
 Imperfect blinding (disclosed, sol.md §10): outcome events keep their `rule_id` because it is
-evidence; a `PROV_*` rule id reveals that provenance enforcement was active.
+evidence; a `PROV_*` rule id reveals that provenance enforcement was active. Shared event
+numbering leaves gaps in partial views (a hint that other events exist). The messages view
+omits `record_status` (an outcome).
+
+Leak checks: `leak_check` is strict (every hit); `leak_report` separates blocking hits from
+generic-term hits inside agent-authored fields that need human triage on live exports.
 """
 
 from __future__ import annotations
@@ -44,8 +49,10 @@ from typing import Any
 
 from ethwall.contract import (
     CLEARANCE_BY_ROLE,
+    ENT_READ_DENIED,
     READS_BY_ROLE,
     SCHEDULE,
+    SCHEMA_INVALID,
     TOOLS_BY_ROLE,
     Condition,
     CoordLabel,
@@ -77,8 +84,7 @@ LINK_TYPES: tuple[str, ...] = (
     "reads",  # source read -> document
     "delivers_source",  # packet delivery / retrieval resolution -> document
     "requests_source",  # retrieval request -> document
-    "sender_context_source",  # message -> restricted document in the sender's context
-    "context_input",  # submission -> visible input delivered earlier into that context
+    "attempted_source",  # denied read attempt -> the requested document
     "claimed_citation",  # article/order -> agent-cited document (a claim, not proof)
 )
 
@@ -194,29 +200,31 @@ def _sources(world: World) -> dict[str, Any]:
     }
 
 
+# Entitlement/schema blocks that leave no submission event: exported as `action_denied`
+# with the proposed tool name and only these structured, text-free arguments.
+_DENIED_RULES = frozenset({ENT_READ_DENIED, SCHEMA_INVALID})
+_SAFE_DENIED_ARGS = {"read_document": ("doc_id",), "list_documents": ("store",)}
+
+
 class _Index:
-    """One pass over the stream: opaque ids, rounds, submissions and context inputs."""
+    """One pass over the stream: opaque ids, rounds, submissions, denied attempts."""
 
     def __init__(self, events: Sequence[Event], world: World):
-        self.doc_ids = {d.doc_id for d in world.documents}
         self.eid: dict[int, str] = {}  # seq -> E id
         self.round: dict[int, int] = {}
         self.sub_eid: dict[str, str] = {}  # service submission id -> E id
         self.sub_event: dict[str, Event] = {}
+        self.proposals: dict[
+            str, Mapping[str, Any]
+        ] = {}  # call id -> TOOL_PROPOSED payload
         self.terminal: str | None = None
-        self.context_inputs: dict[int, list[str]] = {}  # submission seq -> input E ids
-        delivered_eid: dict[str, str] = {}  # message id -> delivery E id
-        packet_eid: dict[str, str] = {}  # role -> last packet delivery E id
-        call_eid: dict[
-            str, str
-        ] = {}  # call id -> SOURCE_READ / RETRIEVAL_RESOLVED E id
-        request_call: dict[str, str] = {}  # retrieval request id -> call id
-        inputs: dict[str, list[str]] = {}  # role -> observed visible inputs
         rnd, n = 1, 0
         for e in events:
             self.round[e.seq] = rnd
             p = e.payload
-            if e.kind in _EVIDENCE_KINDS:
+            if e.kind == EventKind.TOOL_PROPOSED:
+                self.proposals[p["call_id"]] = p
+            if e.kind in _EVIDENCE_KINDS or self.is_denied_attempt(e):
                 n += 1
                 eid = f"E{n:03d}"
                 self.eid[e.seq] = eid
@@ -224,34 +232,20 @@ class _Index:
                     sid = p[_SUBMISSIONS[e.kind]]
                     self.sub_eid[sid] = eid
                     self.sub_event[sid] = e
-                    role = p.get("sender") or p.get("role") or e.actor
-                    self.context_inputs[e.seq] = list(inputs.get(role, []))
-                if e.kind == EventKind.RETRIEVAL_REQUESTED:
-                    request_call[p["request_id"]] = p["call_id"]
-                elif e.kind == EventKind.RETRIEVAL_RESOLVED:
-                    call = request_call.get(p["request_id"])
-                    if call is not None:
-                        call_eid[call] = eid
-                elif e.kind == EventKind.SOURCE_READ:
-                    call_eid[p["call_id"]] = eid
-                elif e.kind == EventKind.MESSAGE_DELIVERED:
-                    delivered_eid[p["message_id"]] = eid
-                elif e.kind == EventKind.PACKET_DELIVERED:
-                    packet_eid[p["role"]] = eid
-            if e.kind == EventKind.OBSERVATION:
-                ref, channel = p["ref_id"], p["channel"]
-                found = {
-                    "packet": packet_eid.get(p["role"]),
-                    "message": delivered_eid.get(ref),
-                    "tool_result": call_eid.get(ref),
-                }.get(channel)
-                seen = inputs.setdefault(p["role"], [])
-                if found is not None and found not in seen:
-                    seen.append(found)
-            elif e.kind == EventKind.PRICE_ADVANCED:
+            if e.kind == EventKind.PRICE_ADVANCED:
                 rnd += 1
             elif e.kind == EventKind.RUN_END:
                 self.terminal = p["terminal_state"]
+
+    def is_denied_attempt(self, e: Event) -> bool:
+        """A blocked read/list or schema-invalid call (its proposal was recorded first)."""
+        p = e.payload
+        return (
+            e.kind == EventKind.DECISION
+            and p["verdict"] == "block"
+            and p["rule_id"] in _DENIED_RULES
+            and p["ref_id"] in self.proposals
+        )
 
     def ref(self, submission_id: str) -> str | None:
         return self.sub_eid.get(submission_id)
@@ -373,69 +367,70 @@ def _item(e: Event, view: View, ix: _Index) -> dict[str, Any] | None:
         }
     elif k == EventKind.PRICE_ADVANCED:
         fields = {"type": "price_advanced", "price": p["price"]}
+    elif k == EventKind.DECISION and e.seq in ix.eid:
+        prop = ix.proposals[p["ref_id"]]
+        name = str(prop["name"])
+        raw = prop.get("args")
+        args: Mapping[str, Any] = raw if isinstance(raw, Mapping) else {}
+        safe = {
+            key: args[key]
+            for key in _SAFE_DENIED_ARGS.get(name, ())
+            if isinstance(args.get(key), str)
+        }
+        fields = {
+            "type": "action_denied",
+            "role": prop["role"],
+            "tool": name,
+            "rule_id": p["rule_id"],
+            "args": safe,
+        }
     else:
         return None
     return {"id": ix.eid[e.seq], "round": ix.round[e.seq], **fields}
 
 
-def _links(
-    events: Sequence[Event], ix: _Index, visible: set[str]
-) -> list[dict[str, str]]:
+def derive_links(export: Mapping[str, Any]) -> list[dict[str, str]]:
+    """The links of the linked view, as a pure function of an export's visible fields.
+
+    Every link restates a field already present on a visible event (an outcome's submission
+    reference, a read's doc id, a delivery's doc ids, a claim's cited doc ids), so links can
+    organise but never add evidence. `derive_links(combined)` is exactly the linked view's
+    `links`; `canonical_evidence_items` treats any other link as added content.
+    """
+    visible = visible_ids(export)
     out: list[dict[str, str]] = []
     seen: set[tuple[str, str, str]] = set()
 
-    def add(src: str | None, dst: str | None, kind: str) -> None:
-        if src is None or dst is None or dst not in visible or src not in visible:
+    def add(src: Any, dst: Any, kind: str) -> None:
+        if not isinstance(dst, str) or dst not in visible:
             return
-        key = (src, dst, kind)
+        key = (str(src), dst, kind)
         if key not in seen:
             seen.add(key)
-            out.append({"from": src, "to": dst, "type": kind})
+            out.append({"from": str(src), "to": dst, "type": kind})
 
-    for e in events:
-        eid = ix.eid.get(e.seq)
-        if eid is None:
-            continue
-        p = e.payload
-        k = e.kind
-        if k in _SUBMISSIONS:
-            for inp in ix.context_inputs.get(e.seq, []):
-                add(eid, inp, "context_input")
-        if k == EventKind.MESSAGE_SUBMITTED:
-            for doc in p["context_refs"]:
-                add(eid, doc, "sender_context_source")
-        elif k in (
-            EventKind.MESSAGE_DELIVERED,
-            EventKind.MESSAGE_BLOCKED,
-            EventKind.MESSAGE_UNDELIVERED,
-        ):
-            add(eid, ix.ref(p["message_id"]), "outcome_of")
-        elif k == EventKind.SOURCE_READ:
-            add(eid, p["doc_id"], "reads")
-        elif k == EventKind.PACKET_DELIVERED:
-            for doc in p["doc_ids"]:
+    for item in export.get("events", ()):
+        eid, t = item.get("id"), item.get("type")
+        for ref in ("message", "request", "order", "article"):
+            if ref in item:
+                add(eid, item[ref], "outcome_of")
+        if t == "source_read":
+            add(eid, item.get("doc_id"), "reads")
+        elif t == "action_denied":
+            add(eid, item.get("args", {}).get("doc_id"), "attempted_source")
+        elif t in ("packet_delivered", "retrieval_resolved"):
+            for doc in item.get("doc_ids", ()):
                 add(eid, doc, "delivers_source")
-        elif k == EventKind.RETRIEVAL_REQUESTED:
-            for doc in p["doc_ids"]:
+        elif t == "retrieval_requested":
+            for doc in item.get("doc_ids", ()):
                 add(eid, doc, "requests_source")
-        elif k in (EventKind.RETRIEVAL_RESOLVED, EventKind.RETRIEVAL_REJECTED):
-            add(eid, ix.ref(p["request_id"]), "outcome_of")
-            for doc in p.get("doc_ids", ()):
-                add(eid, doc, "delivers_source")
-        elif k in (EventKind.ORDER_FILLED, EventKind.ORDER_REJECTED):
-            add(eid, ix.ref(p["order_id"]), "outcome_of")
-        elif k in (EventKind.ARTICLE_ACCEPTED, EventKind.ARTICLE_REJECTED):
-            add(eid, ix.ref(p["article_id"]), "outcome_of")
-        elif k in (EventKind.ORDER_SUBMITTED, EventKind.ARTICLE_SUBMITTED):
-            claims = (
-                p["claims"]
-                if k == EventKind.ARTICLE_SUBMITTED
-                else p["args"].get("rationale_claims", ())
+        elif t in ("article_submitted", "order_submitted"):
+            claims = item.get("claims") or item.get("args", {}).get(
+                "rationale_claims", ()
             )
             for c in claims:
                 for doc in c.get("source_doc_ids", ()):
-                    if isinstance(doc, str):
-                        add(eid, doc, "claimed_citation")
+                    add(eid, doc, "claimed_citation")
     return out
 
 
@@ -451,13 +446,14 @@ def export_view(
         "trajectory_id": trajectory_id,
         "view": v.value,
         "view_description": VIEW_DESCRIPTIONS[v.value],
-        "record_status": ix.terminal or "NO_TERMINAL_RECORD",
         "policy": POLICY_TEXT,
         "sources": _sources(world),
         "events": items,
     }
+    if v != View.MESSAGES:  # the terminal state is an outcome, not a message
+        out["record_status"] = ix.terminal or "NO_TERMINAL_RECORD"
     if v == View.LINKED:
-        out["links"] = _links(events, ix, set(visible_ids(out)))
+        out["links"] = derive_links(out)
     return out
 
 
@@ -487,25 +483,16 @@ _PRESENTATION_KEYS = frozenset({"format", "trajectory_id", "view", "view_descrip
 _EVIDENCE_KEYS = frozenset({"record_status", "policy", "sources", "events", "links"})
 
 
-def _conforming_link(link: Any, visible: frozenset[str], event_ids: set[str]) -> bool:
-    return (
-        isinstance(link, Mapping)
-        and set(link) == {"from", "to", "type"}
-        and link["type"] in LINK_TYPES
-        and link["from"] in event_ids
-        and link["to"] in visible
-    )
-
-
 def canonical_evidence_items(
     export: Mapping[str, Any],
 ) -> frozenset[tuple[str, str, str]]:
     """Expand an export into its set of evidence items.
 
     Events, documents, release records, policy text and record status each become one item.
-    A conforming link (exactly `from`/`to`/`type`, a known type, both ends already visible)
-    adds nothing; anything else in a link, any unknown top-level block and any extra field on
-    an event becomes an item, so it breaks equality with the combined view.
+    A link that `derive_links` would produce from the export's own visible fields adds
+    nothing; any other link (extra keys, unknown type, hidden endpoint, or a well-formed but
+    underivable reference), any unknown top-level block and any extra field on an event
+    becomes an item, so it breaks equality with the combined view.
     """
     items: set[tuple[str, str, str]] = set()
     items.add(("policy", "", canonical_json(export.get("policy"))))
@@ -517,17 +504,15 @@ def canonical_evidence_items(
         items.add(("release_record", str(r.get("record_id")), canonical_json(r)))
     for key in sorted(set(src) - {"documents", "release_records"}):
         items.add(("sources_extra", key, canonical_json(src[key])))
-    event_ids: set[str] = set()
     for item in export.get("events", ()):
         eid = str(item.get("id"))
-        event_ids.add(eid)
         body = {k: v for k, v in item.items() if k != "id"}
         items.add(("event", eid, canonical_json(body)))
     for key in sorted(set(export) - _PRESENTATION_KEYS - _EVIDENCE_KEYS):
         items.add(("extra", key, canonical_json(export[key])))
-    visible = visible_ids(export)
+    derived = {canonical_json(x) for x in derive_links(export)}
     for link in export.get("links", ()) or ():
-        if not _conforming_link(link, visible, event_ids):
+        if canonical_json(link) not in derived:
             items.add(("link_content", "", canonical_json(link)))
     return frozenset(items)
 
@@ -626,6 +611,43 @@ def leak_check(
     return findings
 
 
+# Agent-authored or agent-supplied fields: natural text can contain common words such as
+# "main" or "uncertain". Generic-term hits there need human triage, never silent redaction
+# (redacting would change evidence).
+_AGENT_FIELD = re.compile(
+    r"^\$\.events\[\d+\]\.(text|claims|args|rendered|tool|doc_ids?)\b"
+)
+
+
+def leak_report(
+    export: Mapping[str, Any],
+    forbidden_terms: Iterable[str] | None = None,
+    *,
+    extra_terms: Iterable[str] = (),
+) -> dict[str, list[str]]:
+    """Leak findings split for live exports: {"blocking": [...], "review": [...]}.
+
+    Blocking: forbidden keys anywhere; exact assignment values (`extra_terms`: run ids,
+    fixture ids, salts, partition-bearing ids) anywhere; generic terms outside agent fields.
+    Review: generic-term hits inside agent-authored fields (message text, claims, order args,
+    rendered articles, tool names, doc ids). `leak_check` is the strict union of both.
+    """
+    extras = [t for t in extra_terms if t]
+    generic = leak_check(export, forbidden_terms)
+    exact = leak_check(export, [], extra_terms=extras)
+    blocking: list[str] = list(exact)
+    review: list[str] = []
+    for f in generic:
+        if f in blocking:
+            continue
+        path = f.rsplit(" at ", 1)[-1]
+        if f.startswith("forbidden term") and _AGENT_FIELD.match(path):
+            review.append(f)
+        else:
+            blocking.append(f)
+    return {"blocking": blocking, "review": review}
+
+
 # ----------------------------------------------------------------------------- packets
 
 
@@ -675,11 +697,13 @@ __all__ = [
     "LINK_TYPES",
     "POLICY_TEXT",
     "canonical_evidence_items",
+    "derive_links",
     "event_order",
     "evidence_equal",
     "export_all_views",
     "export_view",
     "leak_check",
+    "leak_report",
     "opaque_trajectory_id",
     "render_packet",
     "visible_ids",

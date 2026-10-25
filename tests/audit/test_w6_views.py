@@ -34,6 +34,7 @@ ACTION_TYPES = {
     "article_accepted",
     "article_rejected",
     "tool_denied",
+    "action_denied",
     "price_advanced",
 }
 
@@ -379,3 +380,82 @@ def test_r_aud_07_policy_text_is_condition_neutral():
     for c in Condition:
         assert c.value not in low
     assert "release record" in low
+
+
+def test_r_aud_05_linked_links_are_derived_from_combined_fields_only():
+    """R-AUD-05: linked links == derive_links(combined); no taint- or observation-based edges."""
+    for fid in all_fids():
+        ex = exports(fid)
+        assert ex[View.LINKED]["links"] == vw.derive_links(ex[View.COMBINED])
+        types = {link["type"] for link in ex[View.LINKED]["links"]}
+        assert types <= set(vw.LINK_TYPES)
+        assert not types & {"context_input", "sender_context_source"}
+
+
+def test_r_aud_05_a_well_formed_but_underivable_link_breaks_equality():
+    """R-AUD-05: a forged reference (order 'reads' a restricted doc) is added content."""
+    for fid in all_fids():
+        ex = exports(fid)
+        order = next(
+            (i for i in ex[View.LINKED]["events"] if i["type"] == "order_submitted"),
+            None,
+        )
+        if order is None:
+            continue
+        world = fx.fixture_world(fid)
+        secret = next(
+            d.doc_id for d in world.documents if d.release.value == "RESTRICTED"
+        )
+        forged = copy.deepcopy(ex[View.LINKED])
+        forged["links"].append({"from": order["id"], "to": secret, "type": "reads"})
+        assert not vw.evidence_equal(ex[View.COMBINED], forged)
+        return
+    raise AssertionError("no fixture with an order")
+
+
+def test_r_aud_04_denied_read_attempts_appear_without_text():
+    """R-AUD-04: a denied read is an action (tool + requested doc id), never message text."""
+    fid = "audit-d04"
+    world = fx.fixture_world(fid)
+    complaint = next(d.doc_id for d in world.documents if "complaint" in d.doc_id)
+    ex = exports(fid)
+    denied = [i for i in ex[View.ACTIONS]["events"] if i["type"] == "action_denied"]
+    assert denied == [
+        {
+            "id": denied[0]["id"],
+            "round": 1,
+            "type": "action_denied",
+            "role": "MARKET",
+            "tool": "read_document",
+            "rule_id": "ENT_READ_DENIED",
+            "args": {"doc_id": complaint},
+        }
+    ]
+    assert not [i for i in ex[View.MESSAGES]["events"] if i["type"] == "action_denied"]
+    assert {"from": denied[0]["id"], "to": complaint, "type": "attempted_source"} in ex[
+        View.LINKED
+    ]["links"]
+
+
+def test_r_aud_04_messages_view_carries_no_outcome_status():
+    """R-AUD-04: the terminal state is an outcome, so the messages view omits it."""
+    for fid in all_fids():
+        ex = exports(fid)
+        assert "record_status" not in ex[View.MESSAGES]
+        assert ex[View.ACTIONS]["record_status"] == ex[View.COMBINED]["record_status"]
+
+
+def test_r_aud_06_leak_report_separates_agent_text_for_review():
+    """R-AUD-06: generic words in agent text go to review; assignments and keys block."""
+    fid = next(f for f in all_fids() if exports(f)[View.MESSAGES]["events"])
+    exp = _planted(exports(fid)[View.COMBINED], "text", "the main risk looks guarded")
+    report = vw.leak_report(exp, extra_terms=[fid])
+    assert report["blocking"] == []
+    assert len(report["review"]) == 2
+    assert vw.leak_check(exp) != []
+    hard = _planted(exp, "file", "runs/main/baseline_s0200_live_x/events.jsonl")
+    hard = _planted(hard, "key", "control")
+    hard = _planted(hard, "text", fid)
+    report = vw.leak_report(hard, extra_terms=[fid])
+    blocking = "\n".join(report["blocking"])
+    assert "source_file" in blocking and "'control'" in blocking and fid in blocking

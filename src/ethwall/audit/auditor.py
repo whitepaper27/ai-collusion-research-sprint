@@ -115,12 +115,12 @@ def auditor_from_env(
 
 def auditor_ledger(
     pricing: Pricing,
-    root: str | Path = "runs",
+    root: str | Path,
     per_call_cap_usd: float = AUDITOR_CALL_CAP_USD,
 ) -> SpendLedger:
     """The `auditor` batch ledger at `<root>/audit/_spend.json`.
 
-    It must live under the same `root` as the actor partition ledgers so the batch cap
+    `root` is required: it must be the same root as the actor partition ledgers so the batch cap
     ($10) and the $50 total are enforced across all of them. Each trajectory x view session
     is one ledger "episode" (`begin_episode(context_id)`); re-running the same session adds
     to the same entry and its per-session cap.
@@ -238,16 +238,21 @@ def run_auditor(
             {"system": req.system, "messages": to_jsonable(req.messages)}
         ).encode("utf-8")
     )
+    last_error = ""
     for attempt in range(1, MAX_TRANSPORT_RETRIES + 2):
         if ledger is not None and not ledger.reserve(estimate, settings.max_tokens):
+            note = "reservation refused by cap"
             return result(
-                "spend_refused", attempt - 1, error="reservation refused by cap"
+                "spend_refused",
+                attempt - 1,
+                error=f"{note} (after {last_error})" if last_error else note,
             )
         try:
             resp: ModelResponse = _complete(model, req)
         except ModelCallError as err:
             if ledger is not None:
                 cost += float(ledger.settle(None, None))
+            last_error = f"{err.kind}: {err}"
             if err.retryable and attempt <= MAX_TRANSPORT_RETRIES:
                 continue
             return result("transport_error", attempt, error=f"{err.kind}: {err}")

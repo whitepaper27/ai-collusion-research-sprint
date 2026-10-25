@@ -18,8 +18,8 @@ from pathlib import Path
 from typing import Any
 
 from ethwall.audit.rubric import CATEGORIES, VIOLATION_KEYS, normalize_violations
-from ethwall.audit.views import render_packet
-from ethwall.contract import canonical_json
+from ethwall.audit.views import render_packet, visible_ids
+from ethwall.contract import View, canonical_json
 
 
 class LabelRequiredError(PermissionError):
@@ -66,6 +66,8 @@ class LabelStore:
 
     def __init__(self, path: str | Path):
         self.path = Path(path)
+        # Append-only log of every prediction reveal, next to the label file.
+        self.reveal_path = self.path.with_name(self.path.stem + "_reveals.jsonl")
 
     def record(
         self,
@@ -111,11 +113,41 @@ class LabelStore:
         h = self.history(item_id)
         return h[-1] if h else None
 
-    def references(self) -> dict[str, str]:
-        """{item_id: latest category} - the human reference for metrics."""
+    def reveals(self, item_id: str | None = None) -> list[dict[str, Any]]:
+        if not self.reveal_path.exists():
+            return []
+        rows = [
+            json.loads(line)
+            for line in self.reveal_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        return [r for r in rows if item_id is None or r["item_id"] == item_id]
+
+    def _pre_reveal(self, item_id: str) -> tuple[HumanLabel, ...]:
+        history = self.history(item_id)
+        first = self.reveals(item_id)
+        return history if not first else history[: int(first[0]["labels_before"])]
+
+    def post_reveal_labels(self, item_id: str) -> tuple[HumanLabel, ...]:
+        """Labels recorded after predictions for the item were first revealed."""
+        return self.history(item_id)[len(self._pre_reveal(item_id)) :]
+
+    def references(self, *, include_post_reveal: bool = False) -> dict[str, str]:
+        """{item_id: category} - the human reference for metrics.
+
+        The latest label made before the item's predictions were first revealed (sol.md §10:
+        labels before predictions). Later relabels are kept in the file and reported by
+        `post_reveal_labels`, but used only with `include_post_reveal=True`.
+        """
         out: dict[str, str] = {}
-        for x in self.all():
-            out[x.item_id] = x.category
+        for item_id in dict.fromkeys(x.item_id for x in self.all()):
+            usable = (
+                self.history(item_id)
+                if include_post_reveal
+                else self._pre_reveal(item_id)
+            )
+            if usable:
+                out[item_id] = usable[-1].category
         return out
 
     def reveal_predictions(
@@ -126,6 +158,14 @@ class LabelStore:
             raise LabelRequiredError(
                 f"no human label for {item_id!r}: label it before viewing predictions"
             )
+        self.reveal_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.reveal_path.open("a", encoding="utf-8") as fh:
+            row = {
+                "item_id": item_id,
+                "revealed_utc": utc_now(),
+                "labels_before": len(self.history(item_id)),
+            }
+            fh.write(canonical_json(row) + "\n")
         path = Path(predictions_path)
         if not path.exists():
             return []
@@ -172,8 +212,17 @@ def label_session(
     output_fn: Callable[[str], Any] = print,
     predictions_path: str | Path | None = None,
 ) -> HumanLabel:
-    """Show the full packet, take one human label, store it, then reveal any predictions."""
+    """Show the full packet, take one human label, store it, then reveal any predictions.
+
+    Labels are made on the full packet: the export must be the combined (or linked) view.
+    Cited ids must exist in that export.
+    """
+    if export.get("view") not in (View.COMBINED.value, View.LINKED.value):
+        raise ValueError(
+            "label from the full packet: pass the combined or linked export"
+        )
     item_id = str(export["trajectory_id"])
+    visible = visible_ids(export)
     output_fn(render_packet(export))
     output_fn("")
     output_fn("Categories: " + ", ".join(CATEGORIES))
@@ -193,11 +242,13 @@ def label_session(
             break
         except ValueError as exc:
             output_fn(str(exc))
-    cited = (
-        input_fn("Cited event ids (space or comma separated): ")
-        .replace(",", " ")
-        .split()
-    )
+    while True:
+        raw = input_fn("Cited event ids (space or comma separated): ")
+        cited = raw.replace(",", " ").split()
+        unknown = [c for c in cited if c not in visible]
+        if not unknown:
+            break
+        output_fn(f"Not in this packet: {unknown}")
     note = input_fn("Uncertainty note: ").strip()
     label = store.record(item_id, category, violations, cited, note)
     output_fn(f"Recorded human label for {item_id}: {category}")

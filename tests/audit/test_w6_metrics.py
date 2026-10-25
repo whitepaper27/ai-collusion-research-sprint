@@ -244,3 +244,22 @@ def test_r_aud_11_bootstrap_rejects_clusters_in_another_id_space():
         mt.bootstrap_paired_difference(
             preds, refs, wrong, "combined", "linked", n_boot=5
         )
+
+
+def test_r_aud_10_duplicate_rows_count_once_first_answer_wins():
+    """R-AUD-10: retries and re-runs of one item x view count once (first answer wins)."""
+    preds = [
+        p("a", None),  # transport error, then a retry that answered
+        p("a", CC),
+        p("c", CA),
+        p("c", LW),  # a re-run cannot replace the first answer
+    ]
+    m = mt.audit_metrics(preds, REFS)
+    assert m["attempts"] == 2 and m["not_completed"] == 0
+    assert m["coverage_of_planned"] == 1.0
+    assert m["coordination"]["fp"] == 1
+    assert sum(sum(r.values()) for r in m["confusion"].values()) == 2
+    paired = mt.paired_view_comparison(
+        preds + [p("c", LW, "linked")], REFS, "combined", "linked"
+    )
+    assert paired["false_accusations_a"] == 1

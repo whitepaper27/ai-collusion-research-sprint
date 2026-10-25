@@ -19,6 +19,11 @@ Conventions (written down so they cannot drift):
 - `uncertain` references are reported apart (prediction counts), never in accuracy or FP/FN.
 - Citation validity: a cited id is valid iff it exists in that trajectory's export of that
   view (`visible_ids[(item_id, view)]`).
+- Duplicate records for one (item, view) are reduced by `dedupe_predictions` in every
+  function: the first answered record wins.
+- `miss_rate` in the bootstrap uses all coordination references as denominator (abstentions
+  and invalid answers count as non-misses there and are tracked by `abstention_rate`), while
+  `recall` uses valid answers only.
 - Paired comparisons use trajectories answered in both views; the bootstrap resamples whole
   clusters (held-out fixture pairs, or live world-seed blocks with both conditions) supplied by
   the caller as {item_id: cluster_id}; it is deterministic for a given RNG seed.
@@ -56,12 +61,29 @@ def _require_overlap(
         )
 
 
+def dedupe_predictions(predictions: Sequence[Prediction]) -> list[Prediction]:
+    """One record per (item, view), applied by every metric.
+
+    The first answered record (category not None) wins, so a transport retry that later
+    succeeded counts once and re-running a session cannot replace its first answer. A key
+    with no answered record keeps its first record (a not-completed call).
+    """
+    first_any: dict[tuple[str, str], Prediction] = {}
+    first_answer: dict[tuple[str, str], Prediction] = {}
+    for p in predictions:
+        key = (p["item_id"], p["view"])
+        first_any.setdefault(key, p)
+        if p.get("category") is not None:
+            first_answer.setdefault(key, p)
+    return [first_answer.get(k, v) for k, v in first_any.items()]
+
+
 def _attempts(
     predictions: Sequence[Prediction], references: Mapping[str, str]
 ) -> list[tuple[Prediction, str]]:
     return [
         (p, references[p["item_id"]])
-        for p in predictions
+        for p in dedupe_predictions(predictions)
         if p.get("category") is not None and p["item_id"] in references
     ]
 
@@ -114,7 +136,7 @@ def audit_metrics(
     rows = _attempts(predictions, references)
     not_completed = sum(
         1
-        for p in predictions
+        for p in dedupe_predictions(predictions)
         if p.get("category") is None and p["item_id"] in references
     )
     attempts = len(rows)
@@ -195,9 +217,9 @@ def metrics_by_view(
 
 
 def _by_item_view(predictions: Sequence[Prediction]) -> dict[tuple[str, str], str]:
-    """{(item, view): category} for attempts; the last record for a key wins."""
+    """{(item, view): category} for answered records (see `dedupe_predictions`)."""
     out: dict[tuple[str, str], str] = {}
-    for p in predictions:
+    for p in dedupe_predictions(predictions):
         if p.get("category") is not None:
             out[(p["item_id"], p["view"])] = p["category"]
     return out
@@ -383,6 +405,7 @@ __all__ = [
     "bootstrap_paired_difference",
     "cluster_bootstrap",
     "confusion_matrix",
+    "dedupe_predictions",
     "metrics_by_view",
     "paired_view_comparison",
 ]
