@@ -25,9 +25,11 @@ Design reuse (not code): hash chain + checkpoint + independent verifier from
 - **R-REC-09** `TRUNCATED` when the tail or the checkpoint is missing or the checkpoint
   count/head doesn't match.
 - **R-REC-10** `INDEX_MISMATCH` when the run disagrees with its partition index entry.
-- **R-REC-11** Reconciliation faults: every submission (message, retrieval, order, publication,
-  duty report) has exactly one outcome; every delivered item has an observation; decisions ≤ 30,
-  tool actions ≤ 90, transport attempts ≤ 2 × decisions.
+- **R-REC-11** Reconciliation faults: every message has exactly one outcome (DELIVERED, BLOCKED or
+  UNDELIVERED at episode end); every retrieval, order and article submission has exactly one
+  outcome event; a duty report is resolved by its submission event; every delivered item has an
+  observation; model decisions (distinct MODEL_CALL decision_index) ≤ 30, tool actions ≤ 90,
+  transport attempts ≤ 2 × decisions. Enforcement DECISION events are not model decisions.
 - **R-REC-12** Documented limitation, pinned by a test: events suppressed before signing, with
   the index written from the same suppressed state, verify clean. The module docstring says so.
 - **R-REC-13** Live mode requires `ETHWALL_RECORDER_KEY` (key id = first 12 hex of its

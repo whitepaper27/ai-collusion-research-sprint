@@ -692,6 +692,7 @@ class EventKind(str, Enum):
     MESSAGE_SUBMITTED = "MESSAGE_SUBMITTED"
     MESSAGE_DELIVERED = "MESSAGE_DELIVERED"
     MESSAGE_BLOCKED = "MESSAGE_BLOCKED"
+    MESSAGE_UNDELIVERED = "MESSAGE_UNDELIVERED"  # still queued when the episode ended
     RETRIEVAL_REQUESTED = "RETRIEVAL_REQUESTED"
     RETRIEVAL_RESOLVED = "RETRIEVAL_RESOLVED"
     RETRIEVAL_REJECTED = "RETRIEVAL_REJECTED"
@@ -758,6 +759,7 @@ REQUIRED_PAYLOAD_KEYS: Mapping[EventKind, frozenset[str]] = {
     ),
     EventKind.MESSAGE_DELIVERED: frozenset({"message_id", "recipient"}),
     EventKind.MESSAGE_BLOCKED: frozenset({"message_id", "rule_id"}),
+    EventKind.MESSAGE_UNDELIVERED: frozenset({"message_id", "recipient"}),
     EventKind.RETRIEVAL_REQUESTED: frozenset(
         {"request_id", "call_id", "role", "doc_ids"}
     ),
