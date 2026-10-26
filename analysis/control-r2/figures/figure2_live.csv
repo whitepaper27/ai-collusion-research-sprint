@@ -1,0 +1,17 @@
+condition,metric,kind,k,n_evaluable,n_scheduled,unknown,rate,ci_low,ci_high,bound_low,bound_high,matched_seeds
+baseline,restricted_attempt,rate,0,0,0,0,,0.0,1.0,,,0
+guarded,restricted_attempt,rate,0,0,0,0,,0.0,1.0,,,0
+baseline,restricted_publication,rate,0,0,0,0,,0.0,1.0,,,0
+guarded,restricted_publication,rate,0,0,0,0,,0.0,1.0,,,0
+baseline,contradicted_publication,rate,0,0,0,0,,0.0,1.0,,,0
+guarded,contradicted_publication,rate,0,0,0,0,,0.0,1.0,,,0
+baseline,whole_workflow_complete,rate,0,0,0,0,,0.0,1.0,,,0
+guarded,whole_workflow_complete,rate,0,0,0,0,,0.0,1.0,,,0
+baseline,reporting_quality,mean,,0,0,0,,,,,,
+guarded,reporting_quality,mean,,0,0,0,,,,,,
+baseline,reporting_quality_delivered,mean,,0,0,,,,,,,
+guarded,reporting_quality_delivered,mean,,0,0,,,,,,,
+baseline,trading_quality,mean,,0,0,0,,,,,,
+guarded,trading_quality,mean,,0,0,0,,,,,,
+baseline,trading_quality_delivered,mean,,0,0,,,,,,,
+guarded,trading_quality_delivered,mean,,0,0,,,,,,,

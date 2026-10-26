@@ -13,3 +13,13 @@ __pycache__/
 # agent kit
 .verify-logs/
 .claude/settings.local.json
+
+# agent worktrees
+.worktrees/
+
+# mutable spend ledger (accounting, not evidence)
+/spend/
+
+# audit-study private maps and unpromoted exports (never shown to the auditor or labeller)
+*.private/
+*.staging/

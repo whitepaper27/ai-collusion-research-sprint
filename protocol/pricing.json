@@ -1,0 +1,8 @@
+{
+  "basis_source": "Claude API reference, model pricing (cached 2026-06-24)",
+  "basis_date": "2026-10-25",
+  "models": {
+    "claude-haiku-4-5": {"input_per_mtok": 1.0, "output_per_mtok": 5.0},
+    "claude-sonnet-5": {"input_per_mtok": 2.0, "output_per_mtok": 10.0}
+  }
+}

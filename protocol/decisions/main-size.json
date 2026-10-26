@@ -1,0 +1,13 @@
+{
+ "main_episodes": 20,
+ "main_seeds": "200-209",
+ "max_usd_per_episode": 0.1463,
+ "mean_usd_per_episode": 0.1271,
+ "projected_usd_20": 2.54,
+ "rule": "20 if 1.2x projection <= $25; else 12 (seeds 200-205) if it fits; else none",
+ "smoke_control_episodes": 14,
+ "smoke_partitions": [
+  "smoke-r2",
+  "control-r2"
+ ]
+}

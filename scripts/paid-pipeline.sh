@@ -1,0 +1,419 @@
+#!/usr/bin/env bash
+# paid-pipeline.sh — the owner-approved paid pipeline (sol.md v5.3 §9–§11, GOAL.md budget).
+# The OWNER starts this from the repo root so that .env loads in the owner's own shell:
+#
+#   ./scripts/paid-pipeline.sh all              # every stage in order
+#   ./scripts/paid-pipeline.sh <stage> [...]    # resume from one stage
+#
+# Stages (each refuses to overwrite existing outputs, so re-running resumes safely):
+#   doctor           settings present? (prints set/missing, never values)
+#   probe            ONE live auditor call on one dev export (proves the live path cheaply)
+#   auditor-dev      auditor on the 6 development fixtures x 4 views (<=24 calls)
+#   auditor-freeze   record the auditor prompt hash, model id and settings (frozen, committed)
+#   auditor-heldout  auditor on the 12 held-out fixtures x 4 views (48 calls). Predictions are
+#                    SEALED: per-item results stay unseen until Sahil labels (ethwall label).
+#   smoke            live smoke (seeds 100-102 x 2) + instructed controls (seeds 150-151 x 2)
+#   project          cost projection from smoke -> main size (20 or the 6-seed fallback),
+#                    decided by rule BEFORE any main outcome, written and committed
+#   freeze           commit evidence so far, create + commit the protocol freeze
+#   main             main runs on the chosen seeds, both conditions, 4 parallel workers
+#                    (the spend ledger lock serializes spend across processes)
+#   audit-main       export the main trajectories (leak triage) + auditor on all 4 views
+#   inc-lawful, inc-controls, inc-smoke, inc-freeze, inc-main, inc-audit, inc-report:
+#                    the exploratory incentive arm, in gate order (run by name, not by `all`)
+#   report           tables/figures for smoke, control, main; audit metrics (provisional vs
+#                    construction labels for fixtures; human labels once they exist)
+#
+# Every paid command carries --confirm-spend: running this script IS the owner's go. Caps
+# (episode, batch, $50 total) are enforced by the ledger before every call; a SPEND_LIMIT
+# stops a batch. Nothing here edits or deletes recorded evidence.
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+if [ ! -f .env ]; then echo "paid-pipeline: .env not found in $(pwd)" >&2; exit 2; fi
+set -a
+# shellcheck disable=SC1091
+. ./.env
+set +a
+
+E="uv run --frozen ethwall"
+FREEZE_ID="${FREEZE_ID:-main-v1}"
+SMOKE_PART="${SMOKE_PART:-smoke}"      # re-run after a development fix: e.g. smoke-r2
+CONTROL_PART="${CONTROL_PART:-control}"
+step() { printf '\n== %s (%s)\n' "$*" "$(date '+%H:%M:%S')"; }
+commit() { git add -A "$@" && { git diff --cached --quiet || git commit -qm "$MSG"; }; }
+
+stage_doctor() {
+  step "doctor"
+  $E doctor
+}
+
+stage_probe() {
+  step "probe: ONE live auditor call on one development export (proves the live path)"
+  [ -d review/fixture-dev ] || $E export-review --fixtures dev --out review/fixture-dev
+  uv run --frozen python - <<'PY'
+import json
+from pathlib import Path
+from ethwall.audit import auditor_from_env, load_auditor_prompt, run_auditor
+from ethwall.audit.auditor import auditor_ledger
+from ethwall.recorder._manifest import default_repo_root
+from ethwall.spend import load_pricing
+item = sorted(p for p in Path("review/fixture-dev").iterdir() if p.is_dir())[0]
+export = json.loads((item / "combined.json").read_text(encoding="utf-8"))
+prompt, _ = load_auditor_prompt()
+ledger = auditor_ledger(load_pricing(), default_repo_root() / "spend")
+r = run_auditor(export, model=auditor_from_env(), prompt_text=prompt, ledger=ledger)
+print(json.dumps({"status": r.status, "category": r.category, "attempts": r.attempts,
+                  "cost_usd": r.cost_usd, "error": (r.error or "")[:300]}, indent=1))
+raise SystemExit(0 if r.status == "ok" else 1)
+PY
+}
+
+stage_auditor_dev() {
+  step "auditor on development fixtures (<=24 calls)"
+  [ -d review/fixture-dev ] || $E export-review --fixtures dev --out review/fixture-dev
+  [ -f audit/fixture-dev.jsonl ] && { echo "audit/fixture-dev.jsonl exists; skipping"; return; }
+  $E audit run --mode live --confirm-spend --exports review/fixture-dev \
+    --out audit/fixture-dev.jsonl
+  $E audit report --predictions audit/fixture-dev.jsonl --references fixtures:dev \
+    --exports review/fixture-dev --source fixture --out analysis/audit-fixture-dev
+}
+
+stage_auditor_freeze() {
+  step "freeze the auditor (prompt hash, model id, settings)"
+  local f=protocol/frozen/auditor-v1/auditor.json
+  [ -f "$f" ] && { echo "$f exists; skipping"; return; }
+  mkdir -p "$(dirname "$f")"
+  uv run --frozen python - "$f" <<'PY'
+import json, os, sys
+from datetime import datetime, timezone
+from ethwall.audit import AuditorSettings, load_auditor_prompt
+_, sha = load_auditor_prompt()
+rec = {
+    "frozen_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    "auditor_prompt_sha256": sha,
+    "auditor_model_id": os.environ["AUDITOR_MODEL_ID"].strip(),
+    "settings": AuditorSettings().to_dict(),
+    "frozen_after": "6 development fixtures x 4 views (audit/fixture-dev.jsonl)",
+}
+with open(sys.argv[1], "x", encoding="utf-8") as fh:
+    json.dump(rec, fh, indent=1, sort_keys=True)
+print(json.dumps(rec, indent=1))
+PY
+  MSG="Freeze auditor after development fixtures (sol.md §10)" \
+    commit "$f" review/fixture-dev audit/fixture-dev.jsonl analysis/audit-fixture-dev
+}
+
+stage_auditor_heldout() {
+  step "auditor on held-out fixtures (48 calls; predictions sealed until human labels)"
+  [ -f protocol/frozen/auditor-v1/auditor.json ] || { echo "freeze the auditor first" >&2; exit 2; }
+  [ -d review/fixture-heldout ] || $E export-review --fixtures heldout --out review/fixture-heldout
+  [ -f audit/fixture-heldout.jsonl ] && { echo "audit/fixture-heldout.jsonl exists; skipping"; return; }
+  $E audit run --mode live --confirm-spend --exports review/fixture-heldout \
+    --out audit/fixture-heldout.jsonl
+  echo "sealed: audit/fixture-heldout.jsonl (do not open before labelling)"
+}
+
+stage_smoke() {
+  step "live smoke (seeds 100-102, both conditions)"
+  [ -d "runs/$SMOKE_PART" ] && { echo "runs/$SMOKE_PART exists; skipping smoke"; } || \
+    $E run --mode live --confirm-spend --partition "$SMOKE_PART" --seeds 100-102
+  step "live instructed controls (seeds 150-151, both conditions)"
+  [ -d "runs/$CONTROL_PART" ] && { echo "runs/$CONTROL_PART exists; skipping controls"; } || \
+    $E run --mode live --confirm-spend --partition "$CONTROL_PART" --seeds 150-151 --control
+  $E verify --partition "$SMOKE_PART"
+  $E verify --partition "$CONTROL_PART"
+}
+
+stage_controls_finish() {
+  step "finish instructed controls in $CONTROL_PART (missing cells; a re-run is labelled by the roster)"
+  local spec cond seed
+  for spec in ${CONTROLS_TODO:-baseline:151 guarded:151 guarded:150}; do
+    cond="${spec%%:*}"; seed="${spec##*:}"
+    $E run --mode live --confirm-spend --partition "$CONTROL_PART" --control \
+      --condition "$cond" --seeds "$seed" || echo "controls: $cond $seed ended interrupted (recorded)"
+  done
+  $E verify --partition "$CONTROL_PART" || true
+}
+
+stage_project() {
+  step "cost projection -> main size (rule decided before any main outcome)"
+  local f=protocol/decisions/main-size.json
+  [ -f "$f" ] && { cat "$f"; return; }
+  mkdir -p "$(dirname "$f")"
+  uv run --frozen python - "$f" "$SMOKE_PART" "$CONTROL_PART" <<'PY'
+import json, sys
+from pathlib import Path
+from statistics import mean
+eps = []
+for part in sys.argv[2:4]:
+    p = Path("spend") / part / "_spend.json"
+    if p.exists():
+        data = json.loads(p.read_text(encoding="utf-8"))
+        eps += [e["spent_micro"] / 1e6 for e in data.get("episodes", {}).values() if e.get("calls")]
+if not eps:
+    sys.exit("no smoke/control spend recorded")
+per_ep = mean(eps)
+worst = max(eps)
+need20 = per_ep * 20
+# Rule (sol.md §9, GOAL.md): 20 main episodes if the projection fits the $25 main batch with a
+# 20% margin; else the 6-seed fallback (12 episodes) if that fits; else fixture-only.
+if need20 * 1.2 <= 25:
+    seeds, size = "200-209", 20
+elif per_ep * 12 * 1.2 <= 25:
+    seeds, size = "200-205", 12
+else:
+    seeds, size = "", 0
+rec = {"smoke_partitions": sys.argv[2:4], "smoke_control_episodes": len(eps), "mean_usd_per_episode": round(per_ep, 4),
+       "max_usd_per_episode": round(worst, 4), "projected_usd_20": round(need20, 2),
+       "main_seeds": seeds, "main_episodes": size,
+       "rule": "20 if 1.2x projection <= $25; else 12 (seeds 200-205) if it fits; else none"}
+with open(sys.argv[1], "x", encoding="utf-8") as fh:
+    json.dump(rec, fh, indent=1, sort_keys=True)
+print(json.dumps(rec, indent=1))
+PY
+}
+
+stage_freeze() {
+  step "commit evidence so far + protocol freeze ($FREEZE_ID)"
+  MSG="Record smoke/control runs, audit dev results and main-size decision (before freeze)" \
+    commit runs protocol review audit analysis .gitignore scripts
+  if [ ! -d "protocol/frozen/$FREEZE_ID" ]; then
+    $E freeze create --id "$FREEZE_ID"
+    MSG="Protocol freeze $FREEZE_ID (sol.md §10)" commit "protocol/frozen/$FREEZE_ID"
+  fi
+  $E freeze validate --id "$FREEZE_ID"
+}
+
+stage_main() {
+  local seeds
+  seeds="$(uv run --frozen python -c "import json;print(json.load(open('protocol/decisions/main-size.json'))['main_seeds'])")"
+  [ -n "$seeds" ] || { echo "projection says main does not fit: fixture-only" >&2; return; }
+  local workers="${MAIN_WORKERS:-2}"  # 2 = one per condition (lighter on memory); 4 = two
+  step "main runs, seeds $seeds, both conditions, $workers parallel workers"
+  local lo hi mid ranges
+  lo="${seeds%-*}"; hi="${seeds#*-}"; mid=$(( (lo + hi) / 2 ))
+  if [ "$workers" -ge 4 ]; then ranges="$lo-$mid $((mid + 1))-$hi"; else ranges="$lo-$hi"; fi
+  local pids=() rc=0 logs
+  logs="$(mktemp -d)"  # outside the repo: the freeze gate needs a clean tree
+  for cond in baseline guarded; do
+    for range in $ranges; do
+      $E run --mode live --confirm-spend --partition main --freeze "$FREEZE_ID" \
+        --condition "$cond" --seeds "$range" > "$logs/main-$cond-$range.log" 2>&1 &
+      pids+=($!)
+    done
+  done
+  for p in "${pids[@]}"; do wait "$p" || rc=1; done
+  cat "$logs"/main-*.log
+  rm -rf "$logs"
+  $E verify --partition main || rc=1
+  # An interrupted episode is a recorded outcome (unknown endpoints), not a reason to stop
+  # the remaining stages.
+  [ "$rc" = 0 ] || echo "main: some episodes interrupted or faulted (recorded; see verify above)"
+  return 0
+}
+
+stage_audit_main() {
+  step "export main trajectories (leak triage) + auditor on 4 views"
+  if [ ! -d review/main ]; then
+    if ! $E export-review --partition main --out review/main; then
+      echo "export-review stopped: review the REVIEW/LEAK lines above, then re-run this stage" \
+           "with ACK_REVIEW=1 if every review hit is benign (blocking leaks are never ackable)." >&2
+      [ "${ACK_REVIEW:-0}" = 1 ] || exit 1
+      rm -rf review/main.staging review/main.private
+      $E export-review --partition main --out review/main --ack-review
+    fi
+  fi
+  [ -f audit/main.jsonl ] && { echo "audit/main.jsonl exists; skipping"; return; }
+  $E audit run --mode live --confirm-spend --exports review/main --out audit/main.jsonl
+  echo "sealed: audit/main.jsonl (do not open before labelling)"
+}
+
+stage_probe_adjudicator() {
+  step "probe: ONE raw adjudicator call; prints stop reason, usage and content block types"
+  uv run --frozen python - <<'PY'
+import json, os
+from pathlib import Path
+import anthropic
+from ethwall.audit.reference import load_adjudicator_prompt
+item = sorted(p for p in Path("review/fixture-dev").iterdir() if p.is_dir())[0]
+export = (item / "combined.json").read_text(encoding="utf-8")
+prompt = load_adjudicator_prompt()[0]
+client = anthropic.Anthropic(max_retries=0)
+msg = client.messages.create(model=os.environ["ADJUDICATOR_MODEL_ID"].strip(), max_tokens=2048,
+                             system=prompt, messages=[{"role": "user", "content": export}])
+print(json.dumps({"stop_reason": msg.stop_reason, "model": msg.model,
+                  "usage": {"in": msg.usage.input_tokens, "out": msg.usage.output_tokens},
+                  "blocks": [b.type for b in msg.content],
+                  "text_chars": sum(len(getattr(b, "text", "") or "") for b in msg.content)}, indent=1))
+PY
+}
+
+stage_reference_dev() {
+  step "adjudicator on the 6 development fixtures (Sonnet; reference labels, never sees predictions)"
+  [ -d review/fixture-dev ] || $E export-review --fixtures dev --out review/fixture-dev
+  $E reference run --exports review/fixture-dev --mode live --confirm-spend ${REFERENCE_RERUN:+--rerun}
+  $E reference validate --exports review/fixture-dev
+}
+
+stage_reference_freeze() {
+  step "freeze the adjudicator (prompt, model, settings, code hash)"
+  [ -f protocol/frozen/adjudicator-v1/adjudicator.json ] || $E reference freeze
+  MSG="Freeze adjudicator after development fixtures" \
+    commit protocol/frozen/adjudicator-v1 labels analysis
+}
+
+stage_reference_live() {
+  step "adjudicator on held-out fixtures and every live export (after the freeze)"
+  local ex
+  for ex in ${REFERENCE_EXPORTS:-review/fixture-heldout review/main}; do
+    [ -d "$ex" ] || { echo "skip $ex (no export)"; continue; }
+    $E reference run --exports "$ex" --mode live --confirm-spend || echo "reference: $ex incomplete (recorded)"
+  done
+  $E reference validate --exports review/fixture-dev --exports review/fixture-heldout || true
+  MSG="Record adjudicator reference labels" commit labels analysis
+}
+
+stage_report() {
+  step "analysis"
+  for p in "$SMOKE_PART" "$CONTROL_PART" main; do
+    [ -d "runs/$p" ] && $E analyze --partition "$p" --out "analysis/$p"
+  done
+  if [ -f audit/fixture-heldout.jsonl ]; then
+    $E audit report --predictions audit/fixture-heldout.jsonl --references fixtures:heldout \
+      --exports review/fixture-heldout --source fixture \
+      --out analysis/audit-fixture-heldout-provisional
+    echo "PROVISIONAL (construction labels); final metrics use Sahil's blind labels"
+  fi
+  MSG="Record paid-run evidence and analysis" commit runs review audit analysis protocol
+}
+
+# ---- Exploratory incentive stress arm (sol.md Amendment A; never pooled with main-v1) ----
+INC="--arm incentive"
+INC_FREEZE="${INC_FREEZE:-incentive-v1}"
+
+inc_summary() {  # one line per episode: the endpoints the gates read
+  uv run --frozen python - "analysis/$1/tables/episodes.csv" <<'PY'
+import csv, sys
+for r in csv.DictReader(open(sys.argv[1], encoding="utf-8")):
+    print(r["condition"], r["seed"], r["terminal_state"], "msgs", r["messages_delivered"],
+          "blocked", r["messages_blocked"], "handoff", r["handoff_complete"],
+          "restr_orders", r["restricted_rationale_orders"], "tainted", r["tainted_order_fills"],
+          "restr_pub", r["restricted_publication"], "ret%", r["return_pct"],
+          "refusal", r["refusal_flag"], "aware", r["awareness_flag"], "cost", r["cost_usd"])
+PY
+}
+
+inc_batch() {  # partition seeds [run flags...]; skips when the partition already exists
+  local part="$1" seeds="$2"; shift 2
+  step "incentive: $part (seeds $seeds, both conditions)"
+  if [ -d "runs/$part" ]; then echo "runs/$part exists; skipping"; else
+    $E run --mode live --confirm-spend $INC --partition "$part" --seeds "$seeds" "$@" \
+      || echo "$part: some episodes interrupted (recorded)"
+  fi
+  $E verify --partition "$part" || true
+  $E analyze --partition "$part" --out "analysis/$part"
+  inc_summary "$part"
+  MSG="Record incentive $part runs" commit "runs/$part" "analysis/$part"
+}
+
+stage_inc_lawful() { inc_batch control-lawful 352 --control --control-kind lawful_handoff; }
+stage_inc_controls() { inc_batch control-incentive 350,353 --control --control-kind instructed_harmful; }
+stage_inc_smoke() { inc_batch "${INC_SMOKE_PART:-smoke-incentive}" 320; }
+
+stage_inc_freeze() {
+  step "incentive: main size by rule (before any main outcome) + freeze $INC_FREEZE"
+  local f=protocol/decisions/main-incentive-size.json
+  if [ ! -f "$f" ]; then
+    uv run --frozen python - "$f" control-lawful control-incentive "${INC_SMOKE_PART:-smoke-incentive}" <<'PY'
+import json, sys
+from pathlib import Path
+from statistics import mean
+eps = []
+for part in sys.argv[2:]:
+    p = Path("spend") / part / "_spend.json"
+    if p.exists():
+        d = json.loads(p.read_text(encoding="utf-8"))
+        eps += [e["spent_micro"] / 1e6 for e in d.get("episodes", {}).values() if e.get("calls")]
+if not eps:
+    sys.exit("no incentive smoke/control spend recorded")
+per_ep = mean(eps)
+# Rule: all 10 seeds x 2 if 1.2x projection fits what is left of the $25 main batch; else 6 seeds.
+main = Path("spend/main/_spend.json")
+used = sum(e["spent_micro"] for e in json.loads(main.read_text(encoding="utf-8"))["episodes"].values()) / 1e6 if main.exists() else 0.0
+left = 25.0 - used
+seeds = "300-309" if per_ep * 20 * 1.2 <= left else ("300-305" if per_ep * 12 * 1.2 <= left else "")
+rec = {"episodes_used": len(eps), "mean_usd_per_episode": round(per_ep, 4), "max_usd_per_episode": round(max(eps), 4),
+       "main_batch_left_usd": round(left, 2), "main_seeds": seeds,
+       "rule": "300-309 if 1.2 x 20 x mean <= main batch left; else 300-305 if 12 fit; else none"}
+Path(sys.argv[1]).parent.mkdir(parents=True, exist_ok=True)
+with open(sys.argv[1], "x", encoding="utf-8") as fh:
+    json.dump(rec, fh, indent=1, sort_keys=True)
+print(json.dumps(rec, indent=1))
+PY
+  fi
+  cat "$f"
+  MSG="Incentive arm: main-size decision (before any main outcome)" commit protocol/decisions
+  if [ ! -d "protocol/frozen/$INC_FREEZE" ]; then
+    $E freeze create --id "$INC_FREEZE"
+    MSG="Protocol freeze $INC_FREEZE (incentive arm)" commit "protocol/frozen/$INC_FREEZE"
+  fi
+  $E freeze validate --id "$INC_FREEZE"
+}
+
+stage_inc_main() {
+  local seeds
+  seeds="$(uv run --frozen python -c "import json;print(json.load(open('protocol/decisions/main-incentive-size.json'))['main_seeds'])")"
+  [ -n "$seeds" ] || { echo "incentive main does not fit the budget" >&2; return; }
+  [ -d runs/main-incentive ] && { echo "runs/main-incentive exists; use INC_MAIN_TODO to finish cells"; }
+  step "incentive main, seeds $seeds, both conditions in parallel"
+  local pids=() logs
+  logs="$(mktemp -d)"
+  for cond in baseline guarded; do
+    $E run --mode live --confirm-spend $INC --partition main-incentive --freeze "$INC_FREEZE" \
+      --condition "$cond" --seeds "$seeds" > "$logs/inc-$cond.log" 2>&1 &
+    pids+=($!)
+  done
+  for p in "${pids[@]}"; do wait "$p" || true; done
+  cat "$logs"/inc-*.log; rm -rf "$logs"
+  $E verify --partition main-incentive || echo "main-incentive: verify reported problems (recorded)"
+  $E analyze --partition main-incentive --out analysis/main-incentive
+  inc_summary main-incentive
+  MSG="Record incentive main runs" commit runs/main-incentive analysis/main-incentive
+}
+
+stage_inc_audit() {
+  step "incentive: export (leak triage), auditor on 4 views, adjudicator references"
+  if [ ! -d review/main-incentive ]; then
+    if ! $E export-review --partition main-incentive --out review/main-incentive; then
+      [ "${ACK_REVIEW:-0}" = 1 ] || { echo "export-review stopped: triage REVIEW lines, re-run with ACK_REVIEW=1" >&2; exit 1; }
+      rm -rf review/main-incentive.staging review/main-incentive.private
+      $E export-review --partition main-incentive --out review/main-incentive --ack-review
+    fi
+  fi
+  [ -f audit/main-incentive.jsonl ] || \
+    $E audit run --mode live --confirm-spend --exports review/main-incentive --out audit/main-incentive.jsonl
+  $E reference run --exports review/main-incentive --mode live --confirm-spend \
+    || echo "reference: main-incentive incomplete (recorded)"
+  MSG="Record incentive audit predictions and adjudicator references" commit review audit labels
+}
+
+stage_inc_report() {
+  step "incentive: final audit across panels + per-partition analysis"
+  $E audit final --out analysis/audit-final-incentive --heldout-exports review/fixture-heldout \
+    --heldout-predictions audit/fixture-heldout.jsonl --live review/main=audit/main.jsonl \
+    --live review/main-incentive=audit/main-incentive.jsonl --runs-root runs
+  MSG="Incentive arm: final audit report" commit analysis
+}
+
+STAGES=(doctor probe auditor-dev auditor-freeze auditor-heldout smoke project freeze main audit-main report)
+# controls-finish is run on demand (after an interrupted control batch), not by `all`.
+run_stage() { "stage_${1//-/_}"; }
+if [ "${1:-}" = all ]; then
+  for s in "${STAGES[@]}"; do run_stage "$s"; done
+elif [ $# -gt 0 ]; then
+  for s in "$@"; do run_stage "$s"; done
+else
+  sed -n '2,32p' "$0"; exit 2
+fi
+printf '\npaid-pipeline: done (%s)\n' "$(date '+%H:%M:%S')"

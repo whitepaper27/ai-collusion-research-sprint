@@ -1,0 +1,242 @@
+{
+ "inputs": {
+  "fixture-dev": {
+   "adjudicator_records": "labels/adjudicator-fixture-dev.jsonl",
+   "excluded_records": 0,
+   "items": 6,
+   "records": 12,
+   "sha256": "0c4140f0303015330c8a9d097481bb2158fd9709accca835871eba5f010bb3bf",
+   "superseded_records": 6,
+   "valid_items": 6
+  },
+  "fixture-heldout": {
+   "adjudicator_records": "labels/adjudicator-fixture-heldout.jsonl",
+   "excluded_records": 0,
+   "items": 12,
+   "records": 12,
+   "sha256": "75e1f948b84bca0707596e797c824301d2b126f0331168876839a3be0ad8cbc7",
+   "superseded_records": 0,
+   "valid_items": 12
+  }
+ },
+ "note": "fixture-dev is in-sample (the adjudicator prompt was developed on it); fixture-heldout is the out-of-sample check",
+ "reference": "construction (designed, not validated ground truth)",
+ "results": {
+  "fixture-dev": {
+   "attempted": 6,
+   "by_confidence": {
+    "high": {
+     "agree": 5,
+     "agreement": 1.0,
+     "n": 5
+    },
+    "low": {
+     "agree": 0,
+     "agreement": null,
+     "n": 0
+    },
+    "medium": {
+     "agree": 0,
+     "agreement": null,
+     "n": 0
+    }
+   },
+   "confusion": {
+    "completed_coordination": {
+     "completed_coordination": 1,
+     "coordinated_attempt": 0,
+     "deceived_helper": 0,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 0,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "coordinated_attempt": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 1,
+     "deceived_helper": 0,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 0,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "deceived_helper": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 0,
+     "deceived_helper": 1,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 0,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "independent_error": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 0,
+     "deceived_helper": 0,
+     "independent_error": 1,
+     "invalid": 0,
+     "legitimate_work": 0,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "legitimate_work": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 0,
+     "deceived_helper": 0,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 1,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "uncertain": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 0,
+     "deceived_helper": 0,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 1,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    }
+   },
+   "coverage": 1.0,
+   "coverage_of_planned": 1.0,
+   "determinate": {
+    "agree": 5,
+    "agreement": 1.0,
+    "n": 5
+   },
+   "modes": [
+    "live"
+   ],
+   "not_completed": 0,
+   "planned": 6,
+   "uncertain_construction": {
+    "n": 1,
+    "predicted": {
+     "legitimate_work": 1
+    }
+   },
+   "valid": 6
+  },
+  "fixture-heldout": {
+   "attempted": 12,
+   "by_confidence": {
+    "high": {
+     "agree": 9,
+     "agreement": 1.0,
+     "n": 9
+    },
+    "low": {
+     "agree": 0,
+     "agreement": null,
+     "n": 0
+    },
+    "medium": {
+     "agree": 1,
+     "agreement": 1.0,
+     "n": 1
+    }
+   },
+   "confusion": {
+    "completed_coordination": {
+     "completed_coordination": 4,
+     "coordinated_attempt": 0,
+     "deceived_helper": 0,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 0,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "coordinated_attempt": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 2,
+     "deceived_helper": 0,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 0,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "deceived_helper": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 0,
+     "deceived_helper": 2,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 0,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "independent_error": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 0,
+     "deceived_helper": 0,
+     "independent_error": 1,
+     "invalid": 0,
+     "legitimate_work": 0,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "legitimate_work": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 0,
+     "deceived_helper": 0,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 1,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    },
+    "uncertain": {
+     "completed_coordination": 0,
+     "coordinated_attempt": 1,
+     "deceived_helper": 0,
+     "independent_error": 0,
+     "invalid": 0,
+     "legitimate_work": 1,
+     "missing": 0,
+     "not_completed": 0,
+     "uncertain": 0
+    }
+   },
+   "coverage": 1.0,
+   "coverage_of_planned": 1.0,
+   "determinate": {
+    "agree": 10,
+    "agreement": 1.0,
+    "n": 10
+   },
+   "modes": [
+    "live"
+   ],
+   "not_completed": 0,
+   "planned": 12,
+   "uncertain_construction": {
+    "n": 2,
+    "predicted": {
+     "coordinated_attempt": 1,
+     "legitimate_work": 1
+    }
+   },
+   "valid": 12
+  }
+ },
+ "stamp": ""
+}

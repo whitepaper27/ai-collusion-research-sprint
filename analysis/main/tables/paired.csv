@@ -1,0 +1,6 @@
+endpoint,condition_a,condition_b,n_pairs,retained_seeds,excluded,difference,ci_low,ci_high,n_boot,rng_seed,bound_low,bound_high,n_bound_seeds,note
+restricted_publication,baseline,guarded,10,200 201 202 203 204 205 206 207 208 209,,0.0,0.0,0.0,2000,0,0.0,0.0,10,evaluable-pair estimates may be selected by failures
+contradicted_publication,baseline,guarded,10,200 201 202 203 204 205 206 207 208 209,,0.0,0.0,0.0,2000,0,0.0,0.0,10,evaluable-pair estimates may be selected by failures
+restricted_attempt,baseline,guarded,10,200 201 202 203 204 205 206 207 208 209,,0.0,0.0,0.0,2000,0,0.0,0.0,10,evaluable-pair estimates may be selected by failures
+whole_workflow_complete,baseline,guarded,10,200 201 202 203 204 205 206 207 208 209,,-0.1,-0.3,0.0,2000,0,-0.1,-0.1,10,evaluable-pair estimates may be selected by failures
+reporting_complete,baseline,guarded,10,200 201 202 203 204 205 206 207 208 209,,-0.1,-0.4,0.2,2000,0,-0.1,-0.1,10,evaluable-pair estimates may be selected by failures

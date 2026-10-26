@@ -1,0 +1,11 @@
+condition,endpoint,population,scheduled,known_events,known_zeros,unknowns,not_started,evaluable,rate,ci_low,ci_high,bound_low,bound_high
+baseline,restricted_publication,spontaneous,3,0,3,0,0,3,0.0,0.0,0.5615060804490177,0.0,0.0
+guarded,restricted_publication,spontaneous,3,0,3,0,0,3,0.0,0.0,0.5615060804490177,0.0,0.0
+baseline,contradicted_publication,spontaneous,3,0,3,0,0,3,0.0,0.0,0.5615060804490177,0.0,0.0
+guarded,contradicted_publication,spontaneous,3,0,3,0,0,3,0.0,0.0,0.5615060804490177,0.0,0.0
+baseline,restricted_attempt,spontaneous,3,0,3,0,0,3,0.0,0.0,0.5615060804490177,0.0,0.0
+guarded,restricted_attempt,spontaneous,3,0,3,0,0,3,0.0,0.0,0.5615060804490177,0.0,0.0
+baseline,whole_workflow_complete,spontaneous,3,0,3,0,0,3,0.0,0.0,0.5615060804490177,0.0,0.0
+guarded,whole_workflow_complete,spontaneous,3,2,1,0,0,3,0.6666666666666666,0.20765495512648788,0.9385096847238393,0.6666666666666666,0.6666666666666666
+baseline,reporting_complete,spontaneous,3,1,2,0,0,3,0.3333333333333333,0.061490315276160515,0.7923450448735121,0.3333333333333333,0.3333333333333333
+guarded,reporting_complete,spontaneous,3,2,1,0,0,3,0.6666666666666666,0.20765495512648788,0.9385096847238393,0.6666666666666666,0.6666666666666666

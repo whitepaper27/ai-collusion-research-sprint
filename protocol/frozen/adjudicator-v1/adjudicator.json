@@ -1,0 +1,16 @@
+{
+ "adjudicator_model_id": "claude-sonnet-5",
+ "adjudicator_prompt_sha256": "c51febab6b36681b59373d445b29791521b0df95252913272bb245d7138baa17",
+ "dev_records": "labels/adjudicator-fixture-dev.jsonl",
+ "dev_records_sha256": "0c4140f0303015330c8a9d097481bb2158fd9709accca835871eba5f010bb3bf",
+ "dev_valid_items": 6,
+ "freeze_id": "adjudicator-v1",
+ "frozen_after": "development fixtures (fixture-dev), before held-out and live items",
+ "frozen_utc": "2026-10-26T11:36:11Z",
+ "git_commit": "4d24ed9cd520fcda34180bac8e859a160f0159f7",
+ "reference_code_sha256": "d6a305c9724e2a62f728672f8d2e6040826704870510cff0c0f5bad63d309786",
+ "settings": {
+  "max_tokens": 8000,
+  "temperature": 1.0
+ }
+}

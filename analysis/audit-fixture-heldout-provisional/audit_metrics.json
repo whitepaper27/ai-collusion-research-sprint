@@ -1,0 +1,385 @@
+{
+ "actions": {
+  "abstentions": 0,
+  "accuracy_all_attempts": 0.4,
+  "accuracy_valid_answers": 0.4,
+  "attempts": 12,
+  "citations": {
+   "answers_all_valid": 12,
+   "answers_with_citations": 12,
+   "cited": 79,
+   "valid": 79,
+   "validity": 1.0
+  },
+  "confusion": {
+   "completed_coordination": {
+    "abstain": 0,
+    "completed_coordination": 2,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 2,
+    "uncertain": 0
+   },
+   "coordinated_attempt": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 2,
+    "uncertain": 0
+   },
+   "deceived_helper": {
+    "abstain": 0,
+    "completed_coordination": 1,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 1,
+    "uncertain": 0
+   },
+   "independent_error": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 1,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "legitimate_work": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 1,
+    "uncertain": 0
+   },
+   "uncertain": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 2,
+    "uncertain": 0
+   }
+  },
+  "coordination": {
+   "fn": 4,
+   "fp": 1,
+   "positive_refs_abstained_or_invalid": 0,
+   "precision": 0.6666666666666666,
+   "recall": 0.3333333333333333,
+   "tn": 3,
+   "tp": 2
+  },
+  "coverage": 1.0,
+  "coverage_of_planned": 1.0,
+  "invalid": 0,
+  "not_completed": 0,
+  "superseded_records": 0,
+  "uncertain_reference": {
+   "n": 2,
+   "predicted": {
+    "legitimate_work": 2
+   }
+  }
+ },
+ "combined": {
+  "abstentions": 0,
+  "accuracy_all_attempts": 0.6,
+  "accuracy_valid_answers": 0.6,
+  "attempts": 12,
+  "citations": {
+   "answers_all_valid": 12,
+   "answers_with_citations": 12,
+   "cited": 70,
+   "valid": 70,
+   "validity": 1.0
+  },
+  "confusion": {
+   "completed_coordination": {
+    "abstain": 0,
+    "completed_coordination": 4,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "coordinated_attempt": {
+    "abstain": 0,
+    "completed_coordination": 1,
+    "coordinated_attempt": 1,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "deceived_helper": {
+    "abstain": 0,
+    "completed_coordination": 1,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 1,
+    "uncertain": 0
+   },
+   "independent_error": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 1,
+    "uncertain": 0
+   },
+   "legitimate_work": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 1,
+    "uncertain": 0
+   },
+   "uncertain": {
+    "abstain": 0,
+    "completed_coordination": 1,
+    "coordinated_attempt": 1,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   }
+  },
+  "coordination": {
+   "fn": 0,
+   "fp": 1,
+   "positive_refs_abstained_or_invalid": 0,
+   "precision": 0.8571428571428571,
+   "recall": 1.0,
+   "tn": 3,
+   "tp": 6
+  },
+  "coverage": 1.0,
+  "coverage_of_planned": 1.0,
+  "invalid": 0,
+  "not_completed": 0,
+  "superseded_records": 0,
+  "uncertain_reference": {
+   "n": 2,
+   "predicted": {
+    "completed_coordination": 1,
+    "coordinated_attempt": 1
+   }
+  }
+ },
+ "linked": {
+  "abstentions": 0,
+  "accuracy_all_attempts": 0.7,
+  "accuracy_valid_answers": 0.7,
+  "attempts": 12,
+  "citations": {
+   "answers_all_valid": 12,
+   "answers_with_citations": 12,
+   "cited": 70,
+   "valid": 70,
+   "validity": 1.0
+  },
+  "confusion": {
+   "completed_coordination": {
+    "abstain": 0,
+    "completed_coordination": 4,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "coordinated_attempt": {
+    "abstain": 0,
+    "completed_coordination": 1,
+    "coordinated_attempt": 1,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "deceived_helper": {
+    "abstain": 0,
+    "completed_coordination": 1,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 1,
+    "uncertain": 0
+   },
+   "independent_error": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 1,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "legitimate_work": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 1,
+    "uncertain": 0
+   },
+   "uncertain": {
+    "abstain": 0,
+    "completed_coordination": 1,
+    "coordinated_attempt": 1,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   }
+  },
+  "coordination": {
+   "fn": 0,
+   "fp": 1,
+   "positive_refs_abstained_or_invalid": 0,
+   "precision": 0.8571428571428571,
+   "recall": 1.0,
+   "tn": 3,
+   "tp": 6
+  },
+  "coverage": 1.0,
+  "coverage_of_planned": 1.0,
+  "invalid": 0,
+  "not_completed": 0,
+  "superseded_records": 0,
+  "uncertain_reference": {
+   "n": 2,
+   "predicted": {
+    "completed_coordination": 1,
+    "coordinated_attempt": 1
+   }
+  }
+ },
+ "messages": {
+  "abstentions": 2,
+  "accuracy_all_attempts": 0.4,
+  "accuracy_valid_answers": 0.5,
+  "attempts": 12,
+  "citations": {
+   "answers_all_valid": 10,
+   "answers_with_citations": 10,
+   "cited": 19,
+   "valid": 19,
+   "validity": 1.0
+  },
+  "confusion": {
+   "completed_coordination": {
+    "abstain": 0,
+    "completed_coordination": 3,
+    "coordinated_attempt": 1,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "coordinated_attempt": {
+    "abstain": 0,
+    "completed_coordination": 2,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "deceived_helper": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 1,
+    "deceived_helper": 1,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "independent_error": {
+    "abstain": 1,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "legitimate_work": {
+    "abstain": 1,
+    "completed_coordination": 0,
+    "coordinated_attempt": 0,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 0,
+    "uncertain": 0
+   },
+   "uncertain": {
+    "abstain": 0,
+    "completed_coordination": 0,
+    "coordinated_attempt": 1,
+    "deceived_helper": 0,
+    "independent_error": 0,
+    "invalid": 0,
+    "legitimate_work": 1,
+    "uncertain": 0
+   }
+  },
+  "coordination": {
+   "fn": 0,
+   "fp": 1,
+   "positive_refs_abstained_or_invalid": 0,
+   "precision": 0.8571428571428571,
+   "recall": 1.0,
+   "tn": 1,
+   "tp": 6
+  },
+  "coverage": 0.8333333333333334,
+  "coverage_of_planned": 0.8333333333333334,
+  "invalid": 0,
+  "not_completed": 0,
+  "superseded_records": 0,
+  "uncertain_reference": {
+   "n": 2,
+   "predicted": {
+    "coordinated_attempt": 1,
+    "legitimate_work": 1
+   }
+  }
+ }
+}

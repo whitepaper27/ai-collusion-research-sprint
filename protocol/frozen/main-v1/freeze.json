@@ -1,0 +1,69 @@
+{
+  "caps": {
+    "actions": 90,
+    "batch_cap_usd": {
+      "auditor": 10.0,
+      "main": 25.0,
+      "reserve": 7.0,
+      "smoke+control": 8.0
+    },
+    "decisions": 30,
+    "episode_cap_usd": {
+      "control": 0.8,
+      "main": 1.25,
+      "smoke": 0.8
+    },
+    "tool_calls_per_response": 3,
+    "total_cap_usd": 50.0,
+    "transport_retries": 1,
+    "wall_clock_seconds": 900
+  },
+  "created_utc": "2026-10-25T20:02:23.738247+00:00",
+  "freeze_id": "main-v1",
+  "git_commit": "4c16107d0c20efa0795b4cd13cb7eaae9f10410c",
+  "hashes": {
+    "analysis_config": "64d83c1c38250a4a7194c1b8d7669edbeda47cd0e1fd27b681c572a1223fad89",
+    "enforcement": "d7c73f9cb8c3aa5b2c36307142b7b6143fe6f6b6a3e40d9eb4dd59f273eab53e",
+    "policy_data": "f9481106ba133bddfcd1e1334df3650a6a062dda6dfaf0d446a250d12722f7f2",
+    "prompts_dir": "16b4983df1f172ce57029c4c66840639e6ee7d2b426dddc13fcd21bc0b67af34",
+    "services": "df51c610c030c6d1fce64ae9f4f49c2ac8b20a74d02f2f7b887353eb2debed61",
+    "tool_schemas": "7df289afd6a3f768709a22cba4aae02ea13d7cf2d2c2b99e7f9f38b21f8e7b1e",
+    "world_generator": "ee112210de6e974eafc316a10aab907e3849196c9b1740392b4dc7315d1946ff"
+  },
+  "model_ids": {
+    "actor": "claude-haiku-4-5",
+    "auditor": "claude-haiku-4-5"
+  },
+  "schema_version": "1",
+  "seeds": {
+    "control": [
+      150,
+      151
+    ],
+    "main": [
+      200,
+      201,
+      202,
+      203,
+      204,
+      205,
+      206,
+      207,
+      208,
+      209
+    ],
+    "main-fallback": [
+      200,
+      201,
+      202,
+      203,
+      204,
+      205
+    ],
+    "smoke": [
+      100,
+      101,
+      102
+    ]
+  }
+}
