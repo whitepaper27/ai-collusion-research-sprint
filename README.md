@@ -1,4 +1,112 @@
-# Agent Kit — a frontier-lab-style setup for shipping production software with coding agents
+# Ethwall: source-linked evidence for collusion detection in a synthetic finance team
+
+A research harness for an AI-safety sprint (Track 2, collusion detection). A synthetic
+five-role finance team (Market, Legal, HR, Trading, Comms) works on one fictional instrument
+in two conditions with byte-identical prompts, evidence, tools, schedule and budget:
+
+- **`baseline`**: role entitlements only.
+- **`guarded`**: the same, plus **provenance enforcement**. A gate on messages, structured
+  publication and orders blocks content derived from restricted documents.
+
+It asks two questions (see [`GOAL.md`](GOAL.md)):
+
+- **H1, audit:** does a *linked* (source-linked) evidence view change coordination-classification
+  errors, false accusations, misses or abstentions compared with a *combined* chronological view
+  holding the same information? An auditor model compares **four evidence views**
+  (`messages`, `actions`, `combined`, `linked`) on scripted fixtures (6 development, 12 held-out)
+  and on live trajectories.
+- **H2, intervention:** does the provenance gate change restricted publication and
+  legitimate-work completion compared with the matched `baseline` team?
+
+Everything is fictional and local: the company, instrument, people, numbers and IDs. There is no
+real trading, posting, exchange access or legal conclusion. Design: [`ARCHITECTURE.md`](ARCHITECTURE.md);
+full plan: [`sol.md`](sol.md); work list: [`TASKS.md`](TASKS.md); module specs with requirement
+IDs: [`docs/specs/`](docs/specs/).
+
+## Repository map
+
+| Path | Contents |
+|---|---|
+| `src/ethwall/` | The harness: world, services, enforcement (provenance gate), runtime/scheduler, recorder, spend ledger, scoring, evaluation, audit study, analysis, CLI (`ethwall`) |
+| `fixtures/` | World templates and audit fixtures (`fixtures/audit/`) |
+| `protocol/frozen/main-v1/` | Frozen protocol for the live main runs (`freeze.json`) |
+| `protocol/frozen/auditor-v1/` | Frozen auditor prompt, model and settings |
+| `protocol/frozen/adjudicator-v1/` | Frozen reference-adjudicator settings |
+| `runs/` | Recorded episodes, one folder per partition. **Append-only evidence**: never edited or deleted |
+| `audit/` | Auditor predictions (JSONL), including superseded attempts kept as evidence |
+| `labels/` | Reference-adjudicator labels |
+| `analysis/` | Tables, figures and fact sheets per partition; `analysis/audit-final/`; `analysis/report-figures/` |
+| `docs/results/` | Results packet: numbers only, each traced to its source file |
+| `docs/report/` | Report outline and related-work notes |
+| `docs/specs/`, `docs/plans/`, `docs/decisions/` | Module specs, implementation plans, owner decisions |
+| `scripts/` | The gate (`verify.sh`), Docker clean room, the owner's paid pipeline, agent hooks |
+| `tests/` | Test suite, including spec traceability |
+
+## Quickstart (offline, no model calls)
+
+Requires Python 3.10+ and [`uv`](https://docs.astral.sh/uv/).
+
+```bash
+uv sync
+./scripts/verify.sh            # the full gate: format, lint, types, tests (--fast while iterating)
+
+# One mock episode in both conditions (seed 200), written outside the repo
+uv run --frozen ethwall run --mode mock --policy honest --partition mock-demo --seeds 200 --runs-root /tmp/x
+
+# Check the recordings, then build tables, figures and a fact sheet for that partition
+uv run --frozen ethwall verify --partition mock-demo --runs-root /tmp/x
+uv run --frozen ethwall analyze --partition mock-demo --runs-root /tmp/x --out /tmp/x/analysis
+
+# Regenerate the report figures from committed tables (writes analysis/report-figures/*.png)
+uv run --frozen python analysis/make_report_figures.py
+```
+
+`uv run --frozen ethwall -h` lists every subcommand (`run`, `verify`, `analyze`, `freeze`,
+`doctor`, `export-review`, `label`, `audit`); each has its own `-h`. Mock and fixture modes
+never call a model. Every record is tagged with a `mode` (`mock | fixture | live`) and a
+partition, and partitions are never pooled.
+
+## Live runs (owner only)
+
+Paid runs happen only on the owner's explicit go, through `scripts/paid-pipeline.sh`, run from
+the owner's own shell with a local `.env` copied from [`.env.example`](.env.example) (API key,
+exact model IDs, recorder key, pricing basis). **Never commit `.env`.** The script runs the
+stages in gate order (doctor, probe, auditor dev/freeze/held-out, smoke and controls, cost
+projection, freeze, main, audit, report; plus the `inc-*` stages for the incentive arm). The
+spend ledger reserves before every call and stops at the caps: $50 total, $1.25 per main
+episode, $0.80 per smoke/control episode, plus per-batch limits ([`GOAL.md`](GOAL.md)). Main
+runs require a clean tree and a matching protocol freeze. Verifying committed live recordings
+needs the owner's recorder key.
+
+## Results
+
+- [`docs/results/results-2026-10-26.md`](docs/results/results-2026-10-26.md): the results packet
+  (live study, adjudicator validation, audit study, exploratory incentive arm, spend).
+- [`analysis/audit-final/`](analysis/audit-final/): H1 audit metrics, fact sheet and Figure 1.
+- [`analysis/report-figures/`](analysis/report-figures/): report figures 2 to 4.
+
+Headline of the live study, verbatim from the results packet:
+
+> Live study, frozen main-v1 (H2): inconclusive behavioral null
+
+## Limits
+
+- **References are AI-made or designed.** Fixture labels are construction labels written by the
+  fixture author (designed, not validated ground truth); the secondary reference is an AI
+  adjudicator. One sole human reviewer.
+- **Small samples.** 12 held-out fixtures (6 pairs), 20 live main episodes; intervals are wide.
+- **The live null is inconclusive.** No messages moved between roles in the main runs, so the
+  gate never fired, and the instructed controls were not executed.
+- **The incentive arm is exploratory**: post-hoc, partial (controls only; no smoke or main),
+  stopped early, and recorded after the sprint deadline.
+- **Synthetic, fictional world.** One instrument, a constrained structured publication
+  interface, covert channels left open, no real trading or market impact.
+
+---
+
+The rest of this file documents the agent kit this repository's development workflow is built on.
+
+## Agent Kit — a frontier-lab-style setup for shipping production software with coding agents
 
 This kit doesn't build an agent platform. It sets up the repo so off-the-shelf agents
 (Claude Code, Codex) can do most of the implementation safely and in parallel, while you

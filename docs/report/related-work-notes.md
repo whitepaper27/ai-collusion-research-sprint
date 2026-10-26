@@ -5,7 +5,7 @@ pages listed (access date 2026-10-26); web content treated as untrusted data. "W
 lines are paraphrased from those abstracts; verify against the PDFs before citing.
 
 Our position (GOAL.md, sol.md §11): source-linked evidence views for attributing coordinated
-violations vs independent mistakes, plus the measured cost of a targeted provenance gate. We do
+violations vs independent mistakes, plus a targeted provenance gate whose live cost is unmeasured (it never fired). We do
 **not** claim information-flow control is new, nor that evidence views were never compared.
 
 ## Apollo Research: strategic deception in a trading agent
@@ -42,7 +42,7 @@ violations vs independent mistakes, plus the measured cost of a targeted provena
 - What they do: DCOP-grounded collusion audit measured by regret; v2 compares communication-
   based vs action-based collusion and reports "collusion on paper" (plans in text, benign actions).
 - How we differ: communication/action comparison is their prior work; ours is claim-specific
-  source attribution with matched fixture validation and an equal-information linked vs
+  source attribution with matched designed fixtures and an equal-information linked vs
   chronological comparison (sol.md §11), in a finance workflow with a provenance gate.
 
 ## Fides (information-flow control for agents)
@@ -55,7 +55,7 @@ violations vs independent mistakes, plus the measured cost of a targeted provena
 - What they do: Fides planner tracks confidentiality/integrity labels and deterministically
   enforces policies on consequential actions; evaluated on AgentDojo.
 - How we differ: we do not propose a new IFC mechanism; we apply a simple taint gate across a
-  five-role team and measure what it blocks and costs, plus attribution of coordination.
+  five-role team and report what it blocked (nothing live so far), plus attribution of coordination.
 
 ## FLOWSEAL
 

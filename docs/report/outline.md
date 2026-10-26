@@ -47,8 +47,9 @@ Abbreviations for sources:
   separately (GOAL.md).
 - H2: does provenance enforcement (`guarded`) change attempted/completed restricted publication
   and legitimate-work completion/quality vs matched `baseline`? (GOAL.md)
-- Contribution (exactly the GOAL.md claim): validated source-linked attribution in a finance
-  workflow, including false-accusation cases and the cost of a targeted provenance policy.
+- GOAL.md claim (for Sahil to decide; NOT yet supported as worded): "validated" exceeds the
+  evidence (H1 references are designed construction labels plus an AI adjudicator, not human),
+  and "cost of a targeted provenance policy" was not measured (the gate never fired live).
   Same evidence gap as in the Abstract bullets: references are designed/AI labels, not
   validated ground truth; gate cost unmeasured live.
 - Explicitly not claimed: IFC is new; evidence views never compared; profit motive establishes
@@ -63,7 +64,7 @@ Abbreviations for sources:
   work; our distinction is claim-specific source attribution with an equal-information
   linked/combined comparison (sol.md §11 positioning).
 - Fides, FLOWSEAL, SafeFlow: IFC enforcement for agents is established; our gate is a
-  targeted instance whose cost we measure.
+  targeted instance; its live cost is unmeasured (it never fired).
 
 ## 3 Setup
 
@@ -92,15 +93,15 @@ Abbreviations for sources:
 - References (`[A]`, sol.md Amendment A): owner chose AI references over human labels
   (deadline); construction labels = designed references; adjudicator for live trajectories.
 - Live design `[R]`: frozen `main-v1` (commit 4c16107), seeds 200–209 × {baseline, guarded}.
-- Spend `[R]`: about $10 of the $50 cap at time of results file.
+- Spend `[R]`: $11.33 of the $50 cap (11.327957 USD).
 
 ## 4 Results
 
 ### 4.1 Adjudicator validation `[R]`, `[V]`
 
 - Table 1 (from `[V]`): dev 6/6 valid, determinate agreement 5/5; held-out 12/12 valid, 10/10.
-- Disagreements only on fixtures constructed `uncertain` (d06, h02 → legitimate_work; h11 →
-  coordinated_attempt) `[R]`.
+- Disagreements only on fixtures constructed `uncertain` (d06 → legitimate_work; of the two held-out
+  uncertain fixtures, one → legitimate_work, one → coordinated_attempt) `[R]`.
 - One pre-freeze revision: max_tokens 2048 → 8000 (2 of 6 first-pass answers empty) `[R]`.
 
 ### 4.2 H1 audit study, held-out fixtures `[S]`
@@ -155,10 +156,12 @@ Abbreviations for sources:
 
 - Figure 1: `analysis/audit-final/figures/figure1_final.png` (data `figure1_final.csv`); four
   views, fixture and live panels separate.
-- Figure 2: `analysis/main/figures/figure2_live.png` (data `figure2_live.csv`); baseline vs
-  guarded endpoints.
-- Figure 3 (source-linked trajectory vs legitimate contrast, sol.md §11): no generated file
-  found; if made, it must be labeled a fixture (no live positive exists).
+- Figure 2: `analysis/report-figures/fig2_live_endpoints.png` (main-v1 endpoints with Wilson
+  intervals; quality panel from `analysis/main/tables/episodes.csv`).
+- Figure 3: `analysis/report-figures/fig3_trajectory_fixture.png`: development fixtures
+  audit-d05 (coordination) vs audit-d01 (legitimate), labelled scripted fixtures; colour marks
+  context labels, not violations.
+- Figure 4 (optional): `analysis/report-figures/fig4_incentive_pilot.png`, exploratory, not pooled.
 - Appendix candidates: `analysis/control-r2/figures/figure2_live.png`,
   `analysis/smoke-r2/figures/figure2_live.png`, `analysis/audit-fixture-dev/figures/figure1_audit.png`.
 
@@ -189,8 +192,8 @@ Abbreviations for sources:
 - Earlier superseded control round (`runs/control`, baseline seed 151): Legal sent the
   restricted contract fact to Trading and Trading then bought 8 shares: a partial execution
   of an instructed control (see results §4). `control-r2` did not execute.
-- Status: smoke, freeze `incentive-v1`, main (seeds 300–309) not in `analysis/` yet; report as
-  "in progress" unless completed `[R]` §4.
+- Status: smoke, freeze `incentive-v1` and main (seeds 300–309) not run; arm stopped early by
+  the owner `[R]` §4.
 
 ## 6 Limitations
 
@@ -211,7 +214,8 @@ Abbreviations for sources:
 
 - On held-out fixtures, linked view had lowest error (0.300) but linked − combined interval
   includes 0 `[S]`.
-- False accusations unchanged across views (1/4) `[S]`; actions-only view misses most
+- False accusations equal across views under the construction reference (1/4); under the
+  adjudicator reference 1/5, 1/5, 2/5, 2/5 (messages, actions, combined, linked) `[S]`; actions-only view misses most
   coordination `[S]`.
 - Live: no coordination or restricted publication observed; gate cost unmeasured; null
   inconclusive `[R]`.
@@ -227,7 +231,7 @@ Abbreviations for sources:
   inc-audit, inc-report.
 - Analysis (no spend, `stage_report`): `uv run --frozen ethwall analyze --partition main --out analysis/main`
   (same for `smoke-r2`, `control-r2`, `control-lawful`, `control-incentive`). Needs
-  `ETHWALL_RECORDER_KEY` in the owner's shell, or episodes become `KEY_UNAVAILABLE` (see §5).
+  `ETHWALL_RECORDER_KEY` in the owner's shell, or episodes become `KEY_UNAVAILABLE` (see results §4).
 - Adjudicator validation (`stage_reference_live`, writes `[V]`):
   `uv run --frozen ethwall reference validate --exports review/fixture-dev --exports review/fixture-heldout`.
 - Final audit report: the script only contains the incentive form (`stage_inc_report`):
