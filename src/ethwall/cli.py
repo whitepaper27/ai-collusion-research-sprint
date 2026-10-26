@@ -410,8 +410,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 AUDIT_COMMANDS = ("export-review", "label", "audit")
-# Reference labels (docs/specs/references.md R-REF-11): parsed by ethwall.audit_cli like the
-# audit family and routed before the top-level parser.
+# Reference labels (docs/specs/references.md R-REF-11): parsed by ethwall.audit_cli and routed
+# before the top-level parser. Not yet in build_parser: test_all_commands_are_wired (R-CLI-03,
+# review tier) pins the exact subcommand set; adding "reference" to both needs owner review.
 REFERENCE_COMMANDS = ("reference",)
 
 

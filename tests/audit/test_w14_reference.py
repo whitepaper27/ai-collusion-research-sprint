@@ -62,7 +62,7 @@ def reply(text: str, model_id: str = "adj-served-1") -> ModelResponse:
 
 class ScriptedAdjudicator:
     model_id = "adj-requested"
-    mode = Mode.LIVE
+    mode = Mode.MOCK
 
     def __init__(self, *steps: str | Exception):
         self.steps = list(steps)
@@ -250,12 +250,25 @@ def test_spend_refusal_makes_no_call(tmp_path):
 # ----------------------------------------------------------------------------- R-REF-04
 
 
+class LiveScripted(ScriptedAdjudicator):
+    mode = Mode.LIVE
+
+
+def test_live_model_needs_a_ledger():
+    """R-REF-03: a live adjudicator never runs without the spend ledger."""
+    model = LiveScripted(json.dumps(GOOD))
+    with pytest.raises(ValueError, match="ledger"):
+        run(model)
+    assert model.requests == []
+
+
 def test_record_carries_provenance_and_is_appended(tmp_path):
     """R-REF-04: requested and served model, prompt and export hashes, timestamp; append-only."""
     rec = run(
-        ScriptedAdjudicator(json.dumps(GOOD)),
+        LiveScripted(json.dumps(GOOD)),
         partition="fixture-dev",
         export_sha256="f" * 64,
+        ledger=ref.adjudicator_ledger("claude-sonnet-5", tmp_path, table=TABLE),
     )
     d = rec.to_dict()
     assert d["model_id"] == "adj-served-1"
@@ -409,6 +422,7 @@ def test_adjudicator_references_latest_record_wins_and_non_ok_is_missing(tmp_pat
     summary = ref.adjudicator_summary(labels / "adjudicator-main.jsonl")
     assert summary == {
         "records": 5,
+        "excluded_records": 0,
         "items": 3,
         "valid_items": 1,
         "superseded_records": 2,
@@ -462,6 +476,7 @@ def test_validation_reports_confusion_agreement_coverage_and_confidence():
         "d": "uncertain",
         "e": "deceived_helper",
         "f": "coordinated_attempt",
+        "g": "legitimate_work",
     }
     records = [
         {"item_id": "a", "status": "ok", "category": "legitimate_work", "confidence": "high"},
@@ -469,11 +484,14 @@ def test_validation_reports_confusion_agreement_coverage_and_confidence():
         {"item_id": "c", "status": "ok", "category": "completed_coordination", "confidence": "high"},
         {"item_id": "d", "status": "ok", "category": "uncertain", "confidence": "medium"},
         {"item_id": "e", "status": "invalid", "category": None},
+        {"item_id": "g", "status": "transport_error", "category": None},
     ]  # fmt: skip
     v = ref.validate_adjudicator(records, construction)
-    assert v["planned"] == 6 and v["attempted"] == 5 and v["valid"] == 4
+    assert v["planned"] == 7 and v["attempted"] == 5 and v["valid"] == 4
+    assert v["not_completed"] == 1
     assert v["coverage"] == pytest.approx(4 / 5)
-    assert v["coverage_of_planned"] == pytest.approx(4 / 6)
+    assert v["coverage_of_planned"] == pytest.approx(4 / 7)
+    assert v["confusion"]["legitimate_work"]["not_completed"] == 1
     assert v["confusion"]["independent_error"]["legitimate_work"] == 1
     assert v["confusion"]["deceived_helper"]["invalid"] == 1
     assert v["confusion"]["coordinated_attempt"]["missing"] == 1
@@ -484,7 +502,7 @@ def test_validation_reports_confusion_agreement_coverage_and_confidence():
     assert v["uncertain_construction"] == {"n": 1, "predicted": {"uncertain": 1}}
     table = ref.validation_table({"fixture-dev": v})
     first_row = table.splitlines()[2]
-    assert first_row.startswith("| fixture-dev | 6 | 5 | 4 | 0.80 | 3 | 0.67 | 2/2 |")
+    assert first_row.startswith("| fixture-dev | 7 | 5 | 4 | 0.80 | 3 | 0.67 | 2/2 |")
     assert "Confusion (fixture-dev)" in table
 
 
@@ -572,3 +590,74 @@ def test_mock_adjudicator_returns_valid_references():
     rec = run(ref.MockAdjudicator())
     assert rec.status == "ok" and rec.mode == "mock"
     assert rec.model_id.startswith("mock")
+
+
+def test_usable_records_prefer_live_and_require_the_freeze_off_dev():
+    """R-REF-07: a mock dry run never mixes into live references; live records off
+    fixture-dev count only when made under the freeze."""
+    rows = [
+        {"item_id": "A", "mode": "mock", "partition": "main", "status": "ok"},
+        {"item_id": "A", "mode": "live", "partition": "main", "status": "ok",
+         "freeze_id": "adjudicator-v1"},
+        {"item_id": "B", "mode": "live", "partition": "main", "status": "ok",
+         "freeze_id": None},
+        {"item_id": "C", "mode": "live", "partition": "fixture-dev", "status": "ok",
+         "freeze_id": None},
+        {"item_id": "D", "mode": "mock", "partition": "main", "status": "ok"},
+    ]  # fmt: skip
+    kept = ref.usable_records(rows)
+    assert [(r["item_id"], r["mode"]) for r in kept] == [("A", "live"), ("C", "live")]
+    only_mock = [rows[0], rows[4]]
+    assert ref.usable_records(only_mock) == only_mock
+
+
+def test_freeze_rejects_changed_settings_or_code(tmp_path):
+    """R-REF-05: the freeze pins settings and the adjudicator code, not only prompt+model."""
+    target = tmp_path / "adjudicator.json"
+    _, sha = ref.load_adjudicator_prompt()
+    dev = _write_jsonl(tmp_path / "dev.jsonl", [_dev_record()])
+    rec = ref.write_freeze(target, model_id="adj-model", dev_records_path=dev)
+    assert rec["reference_code_sha256"] == ref.reference_code_sha256()
+    for key, value in (("settings", {"max_tokens": 1, "temperature": 1.0}),
+                       ("reference_code_sha256", "0" * 64)):  # fmt: skip
+        changed = tmp_path / f"{key}.json"
+        changed.write_text(json.dumps({**rec, key: value}), encoding="utf-8")
+        with pytest.raises(ref.FreezeError, match="changed"):
+            ref.check_freeze(changed, prompt_sha=sha, model_id="adj-model")
+
+
+def test_freeze_needs_every_dev_item_answered(tmp_path):
+    """R-REF-05: a dev item whose latest current record is not ok blocks the freeze."""
+    dev = _write_jsonl(
+        tmp_path / "dev.jsonl",
+        [_dev_record(item_id="T1"), _dev_record(item_id="T2", status="invalid")],
+    )
+    with pytest.raises(ref.FreezeError, match="T2"):
+        ref.write_freeze(
+            tmp_path / "f.json", model_id="adj-model", dev_records_path=dev
+        )
+
+
+def test_non_core_arm_without_resolver_is_refused(monkeypatch):
+    """R-REF-06: an incentive-arm run is never scored against the core world."""
+    events, _ = _mock_run_events("honest", seed=4)
+    monkeypatch.setattr(ref, "_manifest_resolver", lambda: None)
+    monkeypatch.setattr(
+        ref, "recorded_manifest", lambda _: {"seed": 4, "arm": "incentive"}
+    )
+    with pytest.raises(ValueError, match="incentive"):
+        ref.world_for_events(events)
+
+
+def test_resolver_is_found_in_the_incentive_module(monkeypatch):
+    """R-REF-06: `ethwall.world.incentive.world_from_manifest` is used when present."""
+    import sys
+    import types
+
+    import ethwall.world as world_pkg
+
+    events, world = _mock_run_events("honest", seed=4)
+    fake = types.SimpleNamespace(world_from_manifest=lambda manifest: world)
+    monkeypatch.delattr(world_pkg, "world_from_manifest", raising=False)
+    monkeypatch.setitem(sys.modules, "ethwall.world.incentive", fake)
+    assert ref.world_for_events(events) is world

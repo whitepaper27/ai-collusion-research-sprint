@@ -149,7 +149,8 @@ def test_dev_then_freeze_then_heldout_live_flow(exports, tmp_path, monkeypatch, 
     labels, spend = tmp_path / "labels", tmp_path / "spend"
     freeze = tmp_path / "frozen" / "adjudicator.json"
     common = ["--labels-dir", str(labels), "--mode", "live", "--confirm-spend",
-              "--spend-root", str(spend), "--freeze-path", str(freeze)]  # fmt: skip
+              "--spend-root", str(spend), "--freeze-path", str(freeze),
+              "--allow-empty-spend-root"]  # fmt: skip
     assert cli.main(["reference", "run", "--exports", str(exports["dev"]),
                      "--partition", "fixture-dev", *common]) == 0  # fmt: skip
     dev = _rows(labels / "adjudicator-fixture-dev.jsonl")
@@ -341,8 +342,18 @@ def test_audit_final_panels_figure_and_tagged_fact_sheet(
     livep = json.loads((out / "mock-ref__adjudicator.json").read_text())
     assert livep["h1"]["bootstrap"]["error_rate"]["n_clusters"] == 2  # seeds 0 and 1
     assert not livep["primary"]
-    row = livep["figure_rows"][0]
-    assert row["attempts"] == livep["metrics_by_view"][row["view"]]["attempts"]
+    for res in (primary, livep):
+        assert len(res["figure_rows"]) == 4
+        for row in res["figure_rows"]:
+            m = res["metrics_by_view"][row["view"]]
+            assert row["attempts"] == m["attempts"]
+            assert row["not_completed"] == m["not_completed"]
+            assert row["abstentions"] == m["abstentions"]
+            assert row["false_accusations"] == m["coordination"]["fp"]
+            assert row["misses"] == m["coordination"]["fn"]
+            if m["accuracy_all_attempts"] is not None:
+                correct = round(m["accuracy_all_attempts"] * row["determinate"])
+                assert row["errors"] == row["determinate"] - correct
     assert (out / "figures" / "figure1_final.png").exists()
     csv = (out / "figures" / "figure1_final.csv").read_text()
     assert "construction" in csv and "adjudicator" in csv and "llm" in csv
@@ -373,3 +384,139 @@ def test_doctor_reports_adjudicator_presence(monkeypatch, capsys):
     assert "secret-model-name" not in out
     lines = {ln.split()[0]: ln.split()[-1] for ln in out.splitlines() if ln.strip()}
     assert lines["ADJUDICATOR_MODEL_ID"] == "set"
+
+
+# ----------------------------------------------------------------------------- review fixes
+
+
+def test_partition_must_match_the_export_dir(exports, tmp_path, monkeypatch, capsys):
+    """R-REF-05/R-REF-11: --partition cannot relabel held-out exports as development ones."""
+    _no_live_model(monkeypatch)
+    _live_env(monkeypatch)
+    rc = cli.main(["reference", "run", "--exports", str(exports["heldout"]),
+                   "--partition", "fixture-dev", "--mode", "live", "--confirm-spend",
+                   "--labels-dir", str(tmp_path / "labels"), "--spend-root",
+                   str(tmp_path / "spend"), "--allow-empty-spend-root"])  # fmt: skip
+    assert rc == 2
+    assert "export dir" in capsys.readouterr().err
+    assert not (tmp_path / "labels").exists()
+
+
+def test_invalid_answers_are_never_resampled(exports, tmp_path, monkeypatch):
+    """R-REF-03: a second invocation skips items already answered, invalid ones included."""
+    labels = tmp_path / "labels"
+    base = ["reference", "run", "--exports", str(exports["dev"]), "--labels-dir",
+            str(labels)]  # fmt: skip
+    monkeypatch.setattr(
+        ref.MockAdjudicator,
+        "complete",
+        lambda self, req: ModelResponse(
+            (TextBlock("not json"),), "end_turn", 0, 0, 0.0, self.model_id
+        ),
+    )
+    assert cli.main(base) == 0
+    monkeypatch.undo()
+    assert cli.main(base) == 0
+    rows = _rows(labels / "adjudicator-fixture-dev.jsonl")
+    assert len(rows) == 6 and {r["status"] for r in rows} == {"invalid"}
+
+
+def test_mock_dry_run_does_not_suppress_live_calls(exports, tmp_path, monkeypatch):
+    """R-REF-07/R-REF-11: mock records never count as done for a live run, and live
+    references ignore them."""
+    labels, spend = tmp_path / "labels", tmp_path / "spend"
+    assert cli.main(["reference", "run", "--exports", str(exports["dev"]),
+                     "--labels-dir", str(labels)]) == 0  # fmt: skip
+    _live_env(monkeypatch)
+    fake = FakeLive()
+    monkeypatch.setattr(ref, "adjudicator_from_env", lambda **_: fake)
+    assert cli.main(["reference", "run", "--exports", str(exports["dev"]),
+                     "--labels-dir", str(labels), "--mode", "live", "--confirm-spend",
+                     "--spend-root", str(spend), "--allow-empty-spend-root",
+                     "--freeze-path", str(tmp_path / "none.json")]) == 0  # fmt: skip
+    assert len(fake.requests) == 6
+    refs = ref.references("adjudicator:fixture-dev", labels_dir=labels)
+    assert {r.provenance["mode"] for r in refs.values()} == {"live"}
+
+
+def test_live_rerun_off_dev_and_dev_after_freeze_are_refused(
+    exports, tmp_path, monkeypatch, capsys
+):
+    """R-REF-05: no --rerun for frozen items; no new live dev records once frozen."""
+    _no_live_model(monkeypatch)
+    _live_env(monkeypatch)
+    freeze = tmp_path / "adjudicator.json"
+    freeze.write_text("{}", encoding="utf-8")
+    common = ["--mode", "live", "--confirm-spend", "--labels-dir", str(tmp_path / "l"),
+              "--spend-root", str(tmp_path / "s"), "--allow-empty-spend-root",
+              "--freeze-path", str(freeze)]  # fmt: skip
+    assert cli.main(["reference", "run", "--exports", str(exports["heldout"]),
+                     "--rerun", *common]) == 2  # fmt: skip
+    assert "--rerun" in capsys.readouterr().err
+    assert cli.main(["reference", "run", "--exports", str(exports["dev"]),
+                     *common]) == 2  # fmt: skip
+    assert "frozen" in capsys.readouterr().err
+
+
+def test_live_refuses_an_empty_spend_root(exports, tmp_path, monkeypatch, capsys):
+    """R-REF-09: caps only bind across ledgers under one root, so a live run on a root with
+    no ledger is refused unless explicitly allowed (no model constructed)."""
+    _no_live_model(monkeypatch)
+    _live_env(monkeypatch)
+    rc = cli.main(["reference", "run", "--exports", str(exports["dev"]), "--mode", "live",
+                   "--confirm-spend", "--labels-dir", str(tmp_path / "l"),
+                   "--spend-root", str(tmp_path / "empty"), "--freeze-path",
+                   str(tmp_path / "none.json")])  # fmt: skip
+    assert rc == 2
+    assert "holds no ledger" in capsys.readouterr().err
+
+
+def test_auditor_is_priced_at_its_own_table_rate(exports, tmp_path, monkeypatch):
+    """R-REF-09: `audit run --mode live` charges the auditor at AUDITOR_MODEL_ID's table rate
+    under the shared spend root."""
+    import ethwall.audit as audit_pkg
+
+    class FakeAuditor:
+        mode = Mode.LIVE
+        model_id = "claude-haiku-4-5"
+
+        def complete(self, req: ModelRequest) -> ModelResponse:
+            body = json.dumps({"category": "abstain", "violations": {},
+                               "cited_event_ids": []})  # fmt: skip
+            return ModelResponse((TextBlock(body),), "end_turn", 1000, 100, 1.0,
+                                 self.model_id)  # fmt: skip
+
+    monkeypatch.setenv("AUDITOR_MODEL_ID", "claude-haiku-4-5")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-not-real")
+    monkeypatch.delenv("ACTOR_MODEL_ID", raising=False)
+    for k, v in zip(PRICE_KEYS, ("1.0", "5.0", "test", "2026-10-25")):
+        monkeypatch.setenv(k, v)
+    monkeypatch.setattr(audit_pkg, "auditor_from_env", lambda **_: FakeAuditor())
+    spend = tmp_path / "spend"
+    args = ["audit", "run", "--exports", str(exports["dev"]), "--views", "combined",
+            "--mode", "live", "--confirm-spend", "--out", str(tmp_path / "p.jsonl"),
+            "--spend-root", str(spend)]  # fmt: skip
+    assert cli.main(args) == 2  # empty spend root refused
+    assert cli.main([*args, "--allow-empty-spend-root"]) == 0
+    ledger = json.loads((spend / "audit" / "_spend.json").read_text())
+    assert ledger["pricing"]["model"] == "claude-haiku-4-5"
+    assert ledger["batches"]["auditor"]["spent_micro"] == 6 * (1000 * 1 + 100 * 5)
+
+
+def test_audit_final_stamp_cannot_remove_mock(exports, live, tmp_path):
+    """R-REF-10: a user stamp is appended; MOCK stays when inputs are mock."""
+    labels, pred = tmp_path / "labels", tmp_path / "held.jsonl"
+    assert cli.main(["audit", "run", "--exports", str(exports["heldout"]), "--out",
+                     str(pred)]) == 0  # fmt: skip
+    out = tmp_path / "final"
+    rc = cli.main(["audit", "final", "--out", str(out), "--heldout-exports",
+                   str(exports["heldout"]), "--heldout-predictions", str(pred),
+                   "--labels-dir", str(labels), "--stamp", "", "--n-boot", "50"])  # fmt: skip
+    assert rc == 0
+    res = json.loads((out / "fixture-heldout__construction.json").read_text())
+    assert res["stamp"] == "MOCK"
+    rc = cli.main(["audit", "final", "--out", str(tmp_path / "f2"), "--heldout-exports",
+                   str(exports["heldout"]), "--heldout-predictions", str(pred),
+                   "--labels-dir", str(labels), "--stamp", "DRAFT", "--n-boot", "50",
+                   "--live", f"{exports['heldout']}={pred}"])  # fmt: skip
+    assert rc == 2  # duplicate panel name

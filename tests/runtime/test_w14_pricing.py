@@ -133,6 +133,27 @@ def test_total_cap_spans_actor_and_adjudicator_ledgers(tmp_path):
     sonnet.begin_episode("x")
     assert sonnet.total_spent_usd == pytest.approx(40.0)
     assert sonnet.reserve(1_000, 1_000)
+    sonnet.cancel()
+    # Overspent main ($26) + auditor batch at $9 brings the total to $50 while the auditor
+    # batch still has $1 of room: the refusal can only come from the total cap.
+    data = json.loads(main.read_text(encoding="utf-8"))
+    data["batches"]["main"]["spent_micro"] = 26_000_000
+    main.write_text(json.dumps(data), encoding="utf-8")
+    other = tmp_path / "audit" / "_spend.json"
+    other.parent.mkdir()
+    other.write_text(
+        json.dumps(
+            {
+                "schema": 1,
+                "batches": {"auditor": {"spent_micro": 9_000_000, "uncertain": False}},
+                "episodes": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert sonnet.batch_spent_usd == pytest.approx(9.0)
+    assert sonnet.total_spent_usd == pytest.approx(50.0)
+    assert not sonnet.reserve(1_000, 1_000)
 
 
 def test_unknown_model_is_refused(tmp_path):
@@ -197,5 +218,8 @@ def test_adjudicator_session_cap_fits_two_attempts_on_the_largest_export():
     """R-REF-09: the per-session cap ($0.25) fits a reservation plus the identical retry for a
     ~28 kB export at Sonnet rates with the adjudicator's max_tokens."""
     pricing = pricing_for_model("claude-sonnet-5", table=TABLE, env=NO_ENV)
-    one = pricing.cost_micro(28_000 + 12_000, ref.AdjudicatorSettings().max_tokens)
+    prompt, _ = ref.load_adjudicator_prompt()
+    # The reservation estimate is the request's bytes: prompt + export (+ JSON indent slack).
+    estimate = len(prompt.encode("utf-8")) + int(28_000 * 1.25)
+    one = pricing.cost_micro(estimate, ref.AdjudicatorSettings().max_tokens)
     assert 2 * one / 1_000_000 <= ref.ADJUDICATOR_CALL_CAP_USD

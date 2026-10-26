@@ -35,11 +35,12 @@ pricing), `src/ethwall/audit_cli.py` (CLI), `protocol/draft/adjudicator_prompt.m
   read from disk, else canonical JSON), settings, mode, UTC timestamp, freeze id, attempts, cost,
   invalid citations.
 - **R-REF-05** Development/freeze discipline: `ethwall reference freeze` writes
-  `protocol/frozen/adjudicator-v1/adjudicator.json` (prompt sha256, model id, settings, the
-  development records file and its sha256) only when valid live development records exist under
-  the current prompt and model; it never overwrites. A live run on any partition other than
-  `fixture-dev` refuses (exit 2, before any call) unless that freeze exists and matches the current
-  prompt and model.
+  `protocol/frozen/adjudicator-v1/adjudicator.json` (prompt sha256, model id, settings, the sha256
+  of the adjudicator code, git commit, the development records file and its sha256) only when every
+  development item's latest live record under the current prompt and model is `ok`; it never
+  overwrites. A live run on any partition other than `fixture-dev` refuses (exit 2, before any
+  call) unless that freeze exists and matches the current prompt, model, settings and code; once
+  frozen, new live development runs and live `--rerun` off `fixture-dev` are refused.
 
 ## Factual checks and references
 
@@ -50,8 +51,9 @@ pricing), `src/ethwall/audit_cli.py` (CLI), `protocol/draft/adjudicator_prompt.m
   `legitimate_work` from the absence of leakage.
 - **R-REF-07** `references(source)` returns `{trajectory id: ReferenceLabel}` with provenance for
   `construction:<dev|heldout>` (designed references, explicitly not validated ground truth),
-  `adjudicator:<partition>` (latest record per item; a non-`ok` latest record leaves the item
-  missing; superseded records counted) and `llm:<path>` (the submission-prep JSONL format, with its
+  `adjudicator:<partition>` (latest usable record per item: when live records exist, mock
+  records are ignored and live records off `fixture-dev` count only under the freeze; a non-`ok`
+  latest record leaves the item missing; superseded and excluded records counted) and `llm:<path>` (the submission-prep JSONL format, with its
   metadata file's provenance and blinding notes when present).
 - **R-REF-08** Adjudicator validation against construction labels on the fixtures: confusion matrix,
   agreement on determinate items, coverage (valid / attempted), per-confidence agreement, reported
@@ -65,7 +67,10 @@ pricing), `src/ethwall/audit_cli.py` (CLI), `protocol/draft/adjudicator_prompt.m
   `SpendLedger.for_model` price a ledger by the configured model id (exact match); a model with no
   recorded price is refused; an env pricing basis for the same model as `ACTOR_MODEL_ID` that
   disagrees with the table is refused. All ledgers share the root lock and the batch and total caps;
-  the adjudicator ledger is `<spend root>/adjudicator/_spend.json` in the `auditor` batch.
+  the adjudicator ledger is `<spend root>/adjudicator/_spend.json` in the `auditor` batch, and the
+  live auditor (`audit run`) is priced at `AUDITOR_MODEL_ID`'s table rate. The spend root defaults
+  to `ETHWALL_SPEND_ROOT` (else `<checkout>/spend`); a live adjudicator or auditor run on a root
+  holding no ledger is refused unless `--allow-empty-spend-root`.
 
 ## Reporting and CLI
 
@@ -77,8 +82,10 @@ pricing), `src/ethwall/audit_cli.py` (CLI), `protocol/draft/adjudicator_prompt.m
   reference source in each title; a fact sheet whose every number cites its source file and
   sha256 and carries `reference = construction | adjudicator | llm`. Mock predictions or references
   stamp the outputs `MOCK`.
-- **R-REF-11** CLI: `ethwall reference run --exports <dir> --partition <name> [--mode mock|live
-  --confirm-spend] [--rerun]`, `ethwall reference freeze`, `ethwall reference validate --exports
-  <dev> --exports <heldout>`, `ethwall reference facts`. Live needs `--confirm-spend`,
-  `ADJUDICATOR_MODEL_ID`, `ANTHROPIC_API_KEY` and a recorded price for the model, else exit 2
-  before any call. Items that already have an `ok` record are skipped unless `--rerun`.
+- **R-REF-11** CLI: `ethwall reference run --exports <dir> [--partition <name>] [--mode
+  mock|live --confirm-spend] [--rerun]`, `ethwall reference freeze`, `ethwall reference validate
+  --exports <dev> --exports <heldout>`, `ethwall reference facts`. The partition is the export dir
+  name (a different `--partition` exits 2). Live needs `--confirm-spend`, `ADJUDICATOR_MODEL_ID`,
+  `ANTHROPIC_API_KEY` and a recorded price for the model, else exit 2 before any call. Items that
+  already have a record under the same mode, prompt and model (any status but `spend_refused`) are
+  skipped unless `--rerun`, so an invalid answer is never re-sampled.

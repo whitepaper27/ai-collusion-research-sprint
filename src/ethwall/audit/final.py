@@ -33,7 +33,6 @@ from ethwall.audit.rubric import CATEGORIES, COORDINATION_POSITIVE
 from ethwall.contract import AUDIT_ABSTAIN, View, sha256_hex
 
 H1_A, H1_B = View.LINKED.value, View.COMBINED.value
-STATISTICS = ("error_rate", "false_accusation_rate", "miss_rate", "abstention_rate")
 MEASURES = ("error_rate", "false_accusation_rate", "miss_rate", "abstention_rate")
 VIEWS = tuple(v.value for v in View)
 UNCERTAIN = "uncertain"
@@ -148,7 +147,7 @@ def panel_result(panel: Panel, *, n_boot: int = 2000, seed: int = 0) -> dict[str
         clusters = {k: v for k, v in panel.clusters.items() if k in panel.refs}
         boots: dict[str, Any] = {}
         if clusters:
-            for stat in STATISTICS:
+            for stat in MEASURES:
                 b = bootstrap_paired_difference(
                     preds,
                     panel.refs,
@@ -410,6 +409,9 @@ def final_report(
             return
         ref_objs.append(refs)
         src = next(iter(refs.values())).provenance
+        extra = {}
+        if kind == "adjudicator":
+            extra["adjudicator_records"] = ref.adjudicator_summary(Path(src["path"]))
         panels.append(
             Panel(
                 name,
@@ -425,6 +427,7 @@ def final_report(
                     "references": {
                         "path": src.get("path"),
                         "sha256": src.get("sha256"),
+                        **extra,
                     },
                 },
                 primary,
@@ -465,6 +468,10 @@ def final_report(
         notes.append(f"held-out fixtures: {heldout_predictions} or exports absent")
 
     # live partitions
+    names = [e.name for e, _, _ in live] + [heldout_exports.name]
+    dupes = sorted({n for n in names if names.count(n) > 1})
+    if dupes:
+        raise ValueError(f"panel names must be unique (export dir names): {dupes}")
     for exports, predictions, private_dir in live:
         name = exports.name
         private = private_dir or exports.with_name(exports.name + ".private")
@@ -493,9 +500,11 @@ def final_report(
     if not panels:
         raise ValueError("nothing to report: " + "; ".join(notes))
 
-    stamp = (
-        stamp if stamp is not None else ("MOCK" if _is_mock(panels, ref_objs) else "")
+    # MOCK is computed, never removable; a user stamp is only appended.
+    parts = (["MOCK"] if _is_mock(panels, ref_objs) else []) + (
+        [stamp] if stamp else []
     )
+    stamp = "+".join(parts)
     out.mkdir(parents=True, exist_ok=True)
     results = []
     facts: dict[str, tuple[Any, Path, str]] = {}

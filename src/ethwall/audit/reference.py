@@ -294,6 +294,8 @@ def run_adjudicator(
         raise ValueError(
             f"adjudicator spend must go to the {AUDITOR_BATCH!r} batch ledger"
         )
+    if ledger is None and _mode_of(model) == Mode.LIVE.value:
+        raise ValueError("a live adjudicator model needs a spend ledger")
     settings = settings or AdjudicatorSettings()
     req = build_adjudicator_request(export, prompt_text, settings)
     requested = str(getattr(model, "model_id", ""))
@@ -407,15 +409,35 @@ def latest_records(
     return out
 
 
+def usable_records(records: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """The records a reference may come from (R-REF-07), in file order.
+
+    When any live record exists, mock records are dropped (a mock dry run never mixes into a
+    live reference), and live records off `fixture-dev` count only when made under a freeze.
+    A file with only mock records stays usable for mock pipelines (stamped MOCK downstream).
+    """
+    rows = list(records)
+    if not any(r.get("mode") == Mode.LIVE.value for r in rows):
+        return rows
+    return [
+        r
+        for r in rows
+        if r.get("mode") == Mode.LIVE.value
+        and (r.get("partition") == DEV_PARTITION or r.get("freeze_id"))
+    ]
+
+
 def adjudicator_summary(path: str | Path) -> dict[str, int]:
     """Record counts so a re-roll of any item stays visible (`superseded_records`)."""
     rows = read_records(path)
-    latest = latest_records(rows)
+    usable = usable_records(rows)
+    latest = latest_records(usable)
     return {
         "records": len(rows),
+        "excluded_records": len(rows) - len(usable),
         "items": len(latest),
         "valid_items": sum(1 for r in latest.values() if r.get("status") == "ok"),
-        "superseded_records": len(rows) - len(latest),
+        "superseded_records": len(usable) - len(latest),
     }
 
 
@@ -465,8 +487,10 @@ def write_freeze(
 ) -> dict[str, Any]:
     """Create the adjudicator freeze record after the development fixtures; never overwrite.
 
-    Requires at least one valid live development record (`fixture-dev`, status ok) made with
-    the current prompt and the configured model id.
+    Requires live development records (`fixture-dev`) made with the current prompt and the
+    configured model id, and that every such item's latest record is `ok`. Records the prompt,
+    model, settings, the sha256 of this module (request building and parsing) and the git
+    commit, so held-out and live runs can check them (`check_freeze`).
     """
     target = Path(path)
     if target.exists():
@@ -477,15 +501,21 @@ def write_freeze(
         raise FreezeError(f"{ADJUDICATOR_MODEL_ENV} is required to freeze")
     dev = Path(dev_records_path)
     rows = read_records(dev)
-    usable = [
+    current = latest_records(
         r
         for r in rows
         if r.get("partition") == DEV_PARTITION
-        and r.get("status") == "ok"
         and r.get("mode") == Mode.LIVE.value
         and r.get("prompt_sha256") == prompt_sha
         and r.get("requested_model_id") == mid
-    ]
+    )
+    usable = [r for r in current.values() if r.get("status") == "ok"]
+    not_ok = sorted(k for k, r in current.items() if r.get("status") != "ok")
+    if not_ok:
+        raise FreezeError(
+            "development items without an ok live record under the current prompt and "
+            f"model: {', '.join(not_ok)}"
+        )
     if not usable:
         raise FreezeError(
             f"no valid live development records in {dev} for the current prompt "
@@ -500,7 +530,9 @@ def write_freeze(
         "settings": (settings or AdjudicatorSettings()).to_dict(),
         "dev_records": dev.as_posix(),
         "dev_records_sha256": sha256_hex(dev.read_bytes()),
-        "dev_valid_items": len({r["item_id"] for r in usable}),
+        "dev_valid_items": len(usable),
+        "reference_code_sha256": reference_code_sha256(),
+        "git_commit": _git_commit(),
         "frozen_after": "development fixtures (fixture-dev), before held-out and live items",
     }
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -510,6 +542,30 @@ def write_freeze(
     except FileExistsError as exc:
         raise FreezeError(f"{target} exists; a freeze is never overwritten") from exc
     return record
+
+
+def reference_code_sha256() -> str:
+    """sha256 of this module's text (line endings normalized, so checkouts agree)."""
+    return sha256_hex(Path(__file__).read_text(encoding="utf-8"))
+
+
+def _git_commit() -> str | None:
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0:
+        return None
+    return out.stdout.strip() or None
 
 
 def load_freeze(path: str | Path | None = None) -> dict[str, Any] | None:
@@ -522,7 +578,8 @@ def load_freeze(path: str | Path | None = None) -> dict[str, Any] | None:
 def check_freeze(
     path: str | Path | None, *, prompt_sha: str, model_id: str
 ) -> dict[str, Any]:
-    """The freeze record if it matches the current prompt and model, else FreezeError."""
+    """The freeze record if it matches the current prompt, model, settings and adjudicator
+    code, else FreezeError."""
     rec = load_freeze(path)
     if rec is None:
         raise FreezeError(
@@ -535,6 +592,12 @@ def check_freeze(
         raise FreezeError(
             f"adjudicator model {model_id!r} differs from the frozen "
             f"{rec.get('adjudicator_model_id')!r}"
+        )
+    if rec.get("settings") != AdjudicatorSettings().to_dict():
+        raise FreezeError("adjudicator settings changed since the freeze")
+    if rec.get("reference_code_sha256") != reference_code_sha256():
+        raise FreezeError(
+            "adjudicator code (request building or parsing) changed since the freeze"
         )
     return rec
 
@@ -573,8 +636,9 @@ def references(
 
     - `construction:dev|heldout` - keyed by trajectory id when `id_map` ({fixture id:
       trajectory id}; invert the private `id_map.json` items) is given, else by fixture id.
-    - `adjudicator:<partition>` - `<labels_dir>/adjudicator-<partition>.jsonl`, latest record
-      per item; an item whose latest record is not `ok` is missing.
+    - `adjudicator:<partition>` - `<labels_dir>/adjudicator-<partition>.jsonl`, latest
+      usable record per item (`usable_records`: live over mock, frozen off fixture-dev); an
+      item whose latest usable record is not `ok` is missing.
     - `llm:<path>` - submission-prep JSONL (latest line per item wins), with the sibling
       `<stem>.metadata.json` provenance when present.
     """
@@ -620,7 +684,7 @@ def _construction(
 def _adjudicator(path: Path) -> dict[str, ReferenceLabel]:
     out: dict[str, ReferenceLabel] = {}
     sha = _file_sha(path)
-    for item, r in latest_records(read_records(path)).items():
+    for item, r in latest_records(usable_records(read_records(path))).items():
         if r.get("status") != "ok" or r.get("category") not in CATEGORIES:
             continue
         prov = {
@@ -711,19 +775,39 @@ def recorded_manifest(events: Sequence[Event | Mapping[str, Any]]) -> dict[str, 
     return {}
 
 
+def _manifest_resolver() -> Callable[[Mapping[str, Any]], World] | None:
+    """`world_from_manifest` from `ethwall.world` or `ethwall.world.incentive`, if present."""
+    import importlib
+
+    for name in ("ethwall.world", "ethwall.world.incentive"):
+        try:
+            module = importlib.import_module(name)
+        except ImportError:
+            continue
+        resolver = getattr(module, "world_from_manifest", None)
+        if resolver is not None:
+            return resolver
+    return None
+
+
 def world_for_events(events: Sequence[Event | Mapping[str, Any]]) -> World:
     """The world a recorded episode ran on, from its RUN_START manifest.
 
-    Uses `ethwall.world.world_from_manifest` when that resolver exists (it selects the recorded
-    arm), else the core world for the recorded seed. One place, so every factual check uses the
-    same reconstruction as the evaluator.
+    Uses `world_from_manifest` (which selects the recorded arm) when it exists, else the core
+    world for the recorded seed. A manifest naming a non-core arm without a resolver is refused
+    rather than silently scored against the core world.
     """
     import ethwall.world as world_pkg
 
     manifest = recorded_manifest(events)
-    resolver = getattr(world_pkg, "world_from_manifest", None)
+    resolver = _manifest_resolver()
     if resolver is not None:
         return resolver(manifest)
+    arm = manifest.get("arm") or "core"
+    if arm != "core":
+        raise ValueError(
+            f"manifest names arm {arm!r} but no world_from_manifest exists"
+        )
     seed = manifest.get("seed")
     if not isinstance(seed, int) or isinstance(seed, bool):
         raise TypeError("no integer seed in the recorded RUN_START manifest")
@@ -887,12 +971,15 @@ def validate_adjudicator(
 ) -> dict[str, Any]:
     """Adjudicator labels vs construction labels on one fixture partition (R-REF-08).
 
-    Latest record per item. Columns: the six categories, `invalid` (latest record not ok) and
-    `missing` (no record). Agreement is on determinate construction labels (not `uncertain`)
+    Latest usable record per item. Columns: the six categories, `invalid` (the parse failed),
+    `not_completed` (transport error or spend refusal: no answer) and `missing` (no record).
+    Coverage = valid / attempted, where not-completed sessions are not attempts (R-AUD-10). Agreement is on determinate construction labels (not `uncertain`)
     with a valid adjudicator label; per-confidence agreement uses the same items.
     """
-    latest = latest_records(r for r in records if str(r["item_id"]) in construction)
-    cols = (*CATEGORIES, "invalid", "missing")
+    latest = latest_records(
+        r for r in usable_records(records) if str(r["item_id"]) in construction
+    )
+    cols = (*CATEGORIES, "invalid", "not_completed", "missing")
     confusion = {c: {k: 0 for k in cols} for c in CATEGORIES}
     det_n = det_agree = 0
     by_conf = {c: {"n": 0, "agree": 0} for c in CONFIDENCE_LEVELS}
@@ -904,7 +991,12 @@ def validate_adjudicator(
             confusion[truth]["missing"] += 1
             continue
         ok = r.get("status") == "ok" and r.get("category") in CATEGORIES
-        col = str(r["category"]) if ok else "invalid"
+        if ok:
+            col = str(r["category"])
+        elif r.get("status") == "invalid":
+            col = "invalid"
+        else:
+            col = "not_completed"
         confusion[truth][col] += 1
         if not ok:
             continue
@@ -919,11 +1011,15 @@ def validate_adjudicator(
         if conf in by_conf:
             by_conf[conf]["n"] += 1
             by_conf[conf]["agree"] += hit
+    not_completed = sum(c["not_completed"] for c in confusion.values())
+    attempted = len(latest) - not_completed
     return {
+        "modes": sorted({str(r.get("mode")) for r in latest.values()}),
         "planned": len(construction),
-        "attempted": len(latest),
+        "attempted": attempted,
         "valid": valid,
-        "coverage": _ratio(valid, len(latest)),
+        "not_completed": not_completed,
+        "coverage": _ratio(valid, attempted),
         "coverage_of_planned": _ratio(valid, len(construction)),
         "confusion": confusion,
         "determinate": {
@@ -1011,9 +1107,11 @@ __all__ = [
     "read_run_events",
     "recorded_manifest",
     "reference_categories",
+    "reference_code_sha256",
     "references",
     "run_adjudicator",
     "seed_clusters",
+    "usable_records",
     "validate_adjudicator",
     "validation_table",
     "world_for_events",

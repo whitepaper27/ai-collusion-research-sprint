@@ -316,7 +316,8 @@ def audit_run(argv: list[str]) -> int:
     p.add_argument("--mode", choices=["mock", "live"], default="mock")
     p.add_argument("--out", required=True)
     p.add_argument("--confirm-spend", action="store_true")
-    p.add_argument("--spend-root", default=str(default_repo_root() / "spend"))
+    p.add_argument("--spend-root", default=default_spend_root())
+    p.add_argument("--allow-empty-spend-root", action="store_true")
     a = p.parse_args(argv)
     ledger = None
     if a.mode == "live":
@@ -331,9 +332,17 @@ def audit_run(argv: list[str]) -> int:
         if missing:
             raise UsageError(f"live auditor needs these settings: {', '.join(missing)}")
         from ethwall.audit import auditor_from_env
+        from ethwall.spend import PricingError, pricing_for_model
 
+        try:
+            load_pricing()
+            # R-REF-09: the auditor is charged at its own model's table rate.
+            pricing = pricing_for_model(os.environ["AUDITOR_MODEL_ID"].strip())
+        except PricingError as exc:
+            raise UsageError(str(exc)) from exc
+        _check_spend_root(Path(a.spend_root), a.allow_empty_spend_root)
         model = auditor_from_env()
-        ledger = auditor_ledger(load_pricing(), a.spend_root)
+        ledger = auditor_ledger(pricing, a.spend_root)
     else:
         model = MockAuditor()
     prompt, _ = load_auditor_prompt()
@@ -466,6 +475,34 @@ def audit_final(argv: list[str]) -> int:
 
 # ----------------------------------------------------------------------------- reference
 
+SPEND_ROOT_ENV = "ETHWALL_SPEND_ROOT"
+
+
+def default_spend_root() -> str:
+    """`ETHWALL_SPEND_ROOT` when set, else `<repo root>/spend` of the running checkout."""
+    return os.environ.get(SPEND_ROOT_ENV, "").strip() or str(
+        default_repo_root() / "spend"
+    )
+
+
+def _check_spend_root(root: Path, allow_empty: bool) -> None:
+    """Refuse a live run on a spend root that holds no ledger at all (R-REF-09).
+
+    Caps are enforced only across ledgers under one root: a run from a fresh worktree would
+    see $0 spent and could overshoot the batch and total caps. Point `--spend-root` (or
+    ETHWALL_SPEND_ROOT) at the root holding the earlier paid ledgers, or pass
+    `--allow-empty-spend-root` for the very first paid call.
+    """
+    from ethwall.cli import UsageError
+
+    if allow_empty or any(root.glob("*/_spend.json")):
+        return
+    raise UsageError(
+        f"spend root {root.resolve()} holds no ledger: point --spend-root or "
+        f"{SPEND_ROOT_ENV} at the root with the earlier paid ledgers "
+        "(or pass --allow-empty-spend-root for the first paid call ever)"
+    )
+
 
 def _id_map(exports: Path, private_dir: str | None) -> dict[str, str]:
     """The private {trajectory id: fixture id or run name} map for an export dir."""
@@ -506,28 +543,47 @@ def reference_run(argv: list[str]) -> int:
 
     p = argparse.ArgumentParser(prog="ethwall reference run")
     p.add_argument("--exports", required=True)
-    p.add_argument("--partition", required=True)
+    p.add_argument(
+        "--partition",
+        default=None,
+        help="must equal the export dir name (the default); never a free label",
+    )
     p.add_argument("--mode", choices=["mock", "live"], default="mock")
     p.add_argument("--confirm-spend", action="store_true")
     p.add_argument("--labels-dir", default="labels")
     p.add_argument(
         "--out", default=None, help="default <labels-dir>/adjudicator-<partition>.jsonl"
     )
-    p.add_argument("--spend-root", default=str(default_repo_root() / "spend"))
+    p.add_argument("--spend-root", default=default_spend_root())
+    p.add_argument(
+        "--allow-empty-spend-root",
+        action="store_true",
+        help="live: allow a spend root that holds no ledger yet (first paid call ever)",
+    )
     p.add_argument("--freeze-path", default=str(ref.ADJUDICATOR_FREEZE_PATH))
     p.add_argument(
-        "--rerun", action="store_true", help="also re-run items with an ok record"
+        "--rerun",
+        action="store_true",
+        help="re-run items that already have a record (mock, or live on fixture-dev "
+        "before the freeze)",
     )
     a = p.parse_args(argv)
+    exports = Path(a.exports)
+    partition = exports.resolve().name
+    if a.partition is not None and a.partition != partition:
+        raise UsageError(
+            f"--partition {a.partition!r} differs from the export dir {partition!r}; "
+            "the partition is the export dir name"
+        )
     try:
         out = (
             Path(a.out)
             if a.out
-            else ref.adjudicator_records_path(a.labels_dir, a.partition)
+            else ref.adjudicator_records_path(a.labels_dir, partition)
         )
     except ValueError as exc:
         raise UsageError(str(exc)) from exc
-    items = _item_dirs(Path(a.exports))
+    items = _item_dirs(exports)
     prompt, prompt_sha = ref.load_adjudicator_prompt()
     ledger = None
     freeze_id = None
@@ -547,7 +603,18 @@ def reference_run(argv: list[str]) -> int:
             pricing_for_model(model_id)
         except PricingError as exc:
             raise UsageError(str(exc)) from exc
-        if a.partition != ref.DEV_PARTITION:
+        if partition == ref.DEV_PARTITION:
+            if ref.load_freeze(a.freeze_path) is not None:
+                raise UsageError(
+                    "the adjudicator is frozen: development records are closed "
+                    f"({a.freeze_path})"
+                )
+        else:
+            if a.rerun:
+                raise UsageError(
+                    "--rerun is refused for live held-out/live items: the first record "
+                    "under the freeze is the reference"
+                )
             try:
                 rec = ref.check_freeze(
                     a.freeze_path, prompt_sha=prompt_sha, model_id=model_id
@@ -555,14 +622,26 @@ def reference_run(argv: list[str]) -> int:
             except ref.FreezeError as exc:
                 raise UsageError(str(exc)) from exc
             freeze_id = str(rec.get("freeze_id"))
+        _check_spend_root(Path(a.spend_root), a.allow_empty_spend_root)
         model: Any = ref.adjudicator_from_env()
         ledger = ref.adjudicator_ledger(model_id, a.spend_root)
+        print(
+            f"spend root {Path(a.spend_root).resolve()}: auditor batch "
+            f"${ledger.batch_spent_usd:.4f} of ${ledger.batch_cap_usd('auditor'):.2f}, "
+            f"total ${ledger.total_spent_usd:.4f}"
+        )
     else:
         model = ref.MockAdjudicator()
+    # Any earlier answer (ok, invalid or transport error) under the same mode, prompt and
+    # model counts as done: an invalid answer is never re-sampled until one parses. Only a
+    # spend refusal (no call made) is retried.
     done = {
-        k
-        for k, r in ref.latest_records(ref.read_records(out)).items()
-        if r.get("status") == "ok"
+        str(r["item_id"])
+        for r in ref.read_records(out)
+        if r.get("status") != "spend_refused"
+        and r.get("mode") == a.mode
+        and r.get("prompt_sha256") == prompt_sha
+        and r.get("requested_model_id") == str(getattr(model, "model_id", ""))
     }
     counts: dict[str, int] = {}
     skipped = 0
@@ -576,14 +655,16 @@ def reference_run(argv: list[str]) -> int:
             model=model,
             prompt_text=prompt,
             ledger=ledger,
-            partition=a.partition,
+            partition=partition,
             export_sha256=sha256_hex(raw),
             freeze_id=freeze_id,
         )
         ref.append_reference(out, record)
         counts[record.status] = counts.get(record.status, 0) + 1
     summary = ", ".join(f"{k} {v}" for k, v in sorted(counts.items())) or "none run"
-    print(f"adjudicator ({a.mode}) {summary}; {skipped} skipped (ok record) -> {out}")
+    print(
+        f"adjudicator ({a.mode}) {summary}; {skipped} skipped (already answered) -> {out}"
+    )
     return 0
 
 
@@ -657,7 +738,9 @@ def reference_validate(argv: list[str]) -> int:
         }
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
+    mock = any("mock" in v["modes"] for v in results.values())
     payload = {
+        "stamp": "MOCK" if mock else "",
         "reference": "construction (designed, not validated ground truth)",
         "note": "fixture-dev is in-sample (the adjudicator prompt was developed on it); "
         "fixture-heldout is the out-of-sample check",
@@ -667,7 +750,7 @@ def reference_validate(argv: list[str]) -> int:
     (out / "validation.json").write_text(
         json.dumps(payload, indent=1, sort_keys=True), encoding="utf-8"
     )
-    table = ref.validation_table(results)
+    table = ("[MOCK]\n\n" if mock else "") + ref.validation_table(results)
     (out / "validation.md").write_text(table, encoding="utf-8")
     print(table, end="")
     print(f"-> {out}")
