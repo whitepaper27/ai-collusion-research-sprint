@@ -1,4 +1,4 @@
-"""`python -m ethwall.world --seed N --out DIR` (R-WLD-13).
+"""`python -m ethwall.world --seed N --out DIR [--arm core|incentive]` (R-WLD-13, R-INC-01).
 
 Writes `world.json` (canonical `World.to_json()`), `registry.json` (the fact registry),
 `release_records.json` and `prices.json` (P0..P6) into DIR.
@@ -12,7 +12,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from ethwall.contract import to_jsonable
+from ethwall.contract import ARMS, to_jsonable
 from ethwall.world import build_world
 
 
@@ -22,9 +22,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--seed", type=int, required=True, help="world seed")
     parser.add_argument("--out", type=Path, required=True, help="output directory")
+    parser.add_argument("--arm", choices=list(ARMS), default="core", help="world arm")
     args = parser.parse_args(argv)
 
-    world = build_world(args.seed)
+    world = build_world(args.seed, args.arm)
     out: Path = args.out
     out.mkdir(parents=True, exist_ok=True)
     files = {

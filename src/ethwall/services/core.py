@@ -4,7 +4,7 @@ Per call, checks run in this order and each one is recorded as a DECISION event 
 block; `ref_id` is the submission id once one exists, else the call id):
 
 1. tool entitlement (TOOLS_BY_ROLE)            -> TOOL_DENIED + ENT_TOOL_DENIED
-2. schema (TOOL_SPECS; extra keys rejected)    -> SCHEMA_INVALID   (no submission is recorded)
+2. schema (tool_specs(arm); extra keys rejected) -> SCHEMA_INVALID  (no submission is recorded)
 3. service checks, both conditions:
    store entitlement for read/list             -> ENT_READ_DENIED
    retrieval ids are PUBLIC/CLEARED world docs -> RET_ID_INVALID
@@ -26,6 +26,11 @@ Choices the spec leaves open:
   provenance policy.
 - Retrieval validates the raw list (1-5 strings), then de-duplicates and sorts. It ignores
   `allowed_readers` on purpose: it is the trusted path for CLEARED material.
+
+Arms (docs/specs/incentive-arm.md R-INC-09): the schemas are the arm's. `arm=None` takes the
+world's arm (incentive iff the world carries the `price_event_direction` fact); an explicit
+arm that differs from the world's is refused, so a core world never accepts the incentive
+predicate and an incentive world never runs under core schemas.
 """
 
 from __future__ import annotations
@@ -70,7 +75,8 @@ from ethwall.contract import (
 )
 from ethwall.enforcement import allow, block, label_names
 from ethwall.services.render import render_article
-from ethwall.services.schema import SERVICE_SCHEMAS, validate
+from ethwall.services.schema import service_schemas, validate
+from ethwall.world.incentive import world_arm as arm_of_world
 
 PUBLIC = frozenset({Label.PUBLIC})
 DENIED_READ_TEXT = "denied: document not available to your role"
@@ -88,7 +94,20 @@ _PREFIX = {
 class EpisodeServices:
     """Implements contract.Services. Fresh instance per episode; records its own events."""
 
-    def __init__(self, world: World, policy: EnforcementPolicy, recorder: Recorder):
+    def __init__(
+        self,
+        world: World,
+        policy: EnforcementPolicy,
+        recorder: Recorder,
+        arm: str | None = None,
+    ):
+        world_arm = arm_of_world(world)
+        if arm is not None and arm != world_arm:
+            raise ValueError(
+                f"services configured for arm {arm!r} but the world is {world_arm!r}"
+            )
+        self.arm = world_arm
+        self._schemas = service_schemas(world_arm)
         self.world = world
         self.policy = policy
         self.recorder = recorder
@@ -149,7 +168,7 @@ class EpisodeServices:
             decisions,
         )
 
-        problem = validate(SERVICE_SCHEMAS[tool], call.args, "args")
+        problem = validate(self._schemas[tool], call.args, "args")
         if (
             problem is None
             and tool == ToolName.SEND_MESSAGE
@@ -620,10 +639,13 @@ def _limit_error(action: str, target: int) -> str | None:
 
 
 def make_services(
-    world: World, policy: EnforcementPolicy, recorder: Recorder
+    world: World,
+    policy: EnforcementPolicy,
+    recorder: Recorder,
+    arm: str | None = None,
 ) -> EpisodeServices:
-    """Fixed export: fresh services for one episode."""
-    return EpisodeServices(world, policy, recorder)
+    """Fixed export: fresh services for one episode (`arm`: see the module docstring)."""
+    return EpisodeServices(world, policy, recorder, arm)
 
 
 def _ledger_of(source: Any) -> Mapping[str, float]:

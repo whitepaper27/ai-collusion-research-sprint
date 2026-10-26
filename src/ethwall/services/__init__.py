@@ -12,7 +12,7 @@ from ethwall.services.core import (
     terminal_equity,
 )
 from ethwall.services.render import render_article
-from ethwall.services.schema import SERVICE_SCHEMAS, validate
+from ethwall.services.schema import SERVICE_SCHEMAS, service_schemas, validate
 
 __all__ = [
     "SERVICE_SCHEMAS",
@@ -20,6 +20,7 @@ __all__ = [
     "make_services",
     "observed_equity",
     "render_article",
+    "service_schemas",
     "terminal_equity",
     "validate",
 ]

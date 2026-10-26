@@ -39,7 +39,6 @@ from typing import Any
 from ethwall.contract import (
     AUDIT_ABSTAIN,
     CoordLabel,
-    EventKind,
     Mode,
     ModelRequest,
     ModelResponse,
@@ -150,7 +149,7 @@ def _export_review(
         opaque_trajectory_id,
     )
     from ethwall.audit.views import leak_report
-    from ethwall.world import build_world
+    from ethwall.world.incentive import world_from_manifest
 
     salt = a.salt or secrets.token_hex(8)
     id_map: dict[str, str] = {}
@@ -181,9 +180,9 @@ def _export_review(
         ):
             events, _ = load_run(run_dir)
             tid = opaque_trajectory_id(run_dir.name, salt=salt)
-            exports = export_all_views(
-                events, build_world(_recorded_seed(events, run_dir)), trajectory_id=tid
-            )
+            # The recorded seed and arm decide the world (R-INC-11).
+            world = world_from_manifest(_recorded(events, run_dir))
+            exports = export_all_views(events, world, trajectory_id=tid)
             for export in exports.values():
                 report = leak_report(export, extra_terms=(run_dir.name, salt))
                 blocking += [f"{tid}: {x}" for x in report["blocking"]]
@@ -248,24 +247,17 @@ def _private_dir(out: Path, staging: Path, private_out: str | None) -> Path:
     return path
 
 
-def _recorded_seed(events: Any, run_dir: Path) -> int:
-    """The world seed from the recorded RUN_START manifest (then manifest.json)."""
+def _recorded(events: Any, run_dir: Path) -> Mapping[str, Any]:
+    """The recorded manifest (RUN_START, then manifest.json) with an integer seed; its seed
+    and arm decide the world (`world_from_manifest`, R-INC-11)."""
+    from ethwall.analysis import recorded_manifest
     from ethwall.cli import UsageError
 
-    for e in events:
-        m = e.payload.get("manifest") if e.kind == EventKind.RUN_START else None
-        seed = m.get("seed") if isinstance(m, Mapping) else None
-        if isinstance(seed, int) and not isinstance(seed, bool):
-            return seed
-    path = run_dir / "manifest.json"
-    seed = (
-        json.loads(path.read_text(encoding="utf-8")).get("seed")
-        if path.is_file()
-        else None
-    )
+    manifest = recorded_manifest(events, run_dir)
+    seed = manifest.get("seed")
     if not isinstance(seed, int) or isinstance(seed, bool):
         raise UsageError(f"{run_dir}: no integer seed in the recorded manifest")
-    return seed
+    return manifest
 
 
 # ----------------------------------------------------------------------------- label

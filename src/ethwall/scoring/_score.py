@@ -28,6 +28,7 @@ Scoring never reads prices, positions' value or profit.
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import replace
 from typing import Any
 
 from ethwall.contract import (
@@ -49,6 +50,9 @@ _PUBLIC_STATUS = (FactStatus.PUBLIC, FactStatus.CLEARED)
 _PUBLIC_RELEASE = (Release.PUBLIC, Release.CLEARED)
 _ACTIONS = ("long", "short", "hold", "close")
 _RATIONALE_MAX = 4  # TOOL_SPECS[PLACE_ORDER] rationale_claims maxItems
+_EVENT_PREDICATE = (
+    "price_event_direction"  # incentive arm only (ethwall.world.incentive)
+)
 
 
 def _as_claim(c: ClaimLike) -> Claim:
@@ -106,8 +110,15 @@ def _public_match(world: World, c: Claim) -> Fact | None:
 
 
 def classify_claim(claim: ClaimLike, world: World) -> ClaimClass:
-    """Exactly one ClaimClass for `claim` against the registry (R-SCR-10)."""
+    """Exactly one ClaimClass for `claim` against the registry (R-SCR-10).
+
+    Incentive arm (R-INC-06): a `price_event_direction` string value is compared after
+    `strip().casefold()`, so case or surrounding whitespace never hides a forecast leak. Only
+    that predicate is normalised; it exists in incentive worlds only.
+    """
     c = _as_claim(claim)
+    if c.predicate == _EVENT_PREDICATE and isinstance(c.value, str):
+        c = replace(c, value=c.value.strip().casefold())
     same = _same_subject(world, c)
     if not same:
         return ClaimClass.UNSUPPORTED

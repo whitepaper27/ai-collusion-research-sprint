@@ -113,13 +113,16 @@ class PairedComparison:
 
 
 def check_single_partition(rows: Iterable[EpisodeMetrics]) -> tuple[str, str] | None:
-    """(mode, partition) shared by every row; raises ValueError when they mix."""
+    """(mode, partition) shared by every row; raises ValueError when modes, partitions or
+    arms (core | incentive, R-INC-11) mix."""
     rows = list(rows)
     modes = sorted({r.mode for r in rows})
     parts = sorted({r.partition for r in rows})
-    if len(modes) > 1 or len(parts) > 1:
+    arms = sorted({r.arm for r in rows})
+    if len(modes) > 1 or len(parts) > 1 or len(arms) > 1:
         raise ValueError(
-            f"refusing to mix modes {modes} or partitions {parts}; analyse one at a time"
+            f"refusing to mix modes {modes}, partitions {parts} or arms {arms}; "
+            "analyse one at a time"
         )
     if not rows:
         return None

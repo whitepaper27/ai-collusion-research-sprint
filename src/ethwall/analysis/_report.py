@@ -242,43 +242,66 @@ def _facts_from_tables(
 # ----------------------------------------------------------------------------- pipeline
 
 
+def recorded_manifest(events: Sequence[Event], run_dir: Path | str) -> dict[str, Any]:
+    """The run's manifest: the signed RUN_START manifest when it names a seed, else
+    `manifest.json` (unsigned), else whatever RUN_START recorded ({} if nothing)."""
+    start: dict[str, Any] = {}
+    for e in events:
+        m = e.payload.get("manifest") if e.kind.value == "RUN_START" else None
+        if isinstance(m, Mapping):
+            start = dict(m)
+            break
+    if "seed" in start:
+        return start
+    path = Path(run_dir) / "manifest.json"
+    if path.is_file():
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(data, Mapping):
+            return dict(data)
+    return start
+
+
 def load_run(
     run_dir: Path | str,
     *,
     world_for: Callable[[int], World] | None = None,
     verifier: Callable[[Path], Sequence[str]] | None = None,
 ) -> tuple[tuple[Event, ...], EpisodeMetrics]:
-    """Read `events.jsonl` from a run directory and evaluate it."""
+    """Read `events.jsonl` from a run directory and evaluate it.
+
+    The world is rebuilt from the recorded manifest's seed and arm
+    (`ethwall.world.incentive.world_from_manifest`, R-INC-11) unless `world_for(seed)` is
+    given (tests pass stand-in worlds).
+    """
     d = Path(run_dir)
     lines = (d / "events.jsonl").read_text(encoding="utf-8").splitlines()
     events = tuple(event_from_dict(json.loads(x)) for x in lines if x.strip())
-    seed = None
-    for e in events:
-        m = e.payload.get("manifest") if e.kind.value == "RUN_START" else None
-        if isinstance(m, Mapping):
-            seed = m.get("seed")
-            break
-    if seed is None and (d / "manifest.json").is_file():
-        seed = json.loads((d / "manifest.json").read_text(encoding="utf-8")).get("seed")
+    manifest = recorded_manifest(events, d)
+    seed = manifest.get("seed")
     if not isinstance(seed, int) or isinstance(seed, bool):
         raise TypeError(f"{d}: no integer seed in the recorded manifest")
     if world_for is None:
-        from ethwall.world import build_world
+        from ethwall.world.incentive import world_from_manifest
 
-        world_for = build_world
+        world = world_from_manifest(manifest)
+    else:
+        world = world_for(seed)
     faults = tuple(verifier(d)) if verifier is not None else ()
-    return events, evaluate_run(events, world_for(seed), recorder_faults=faults)
+    return events, evaluate_run(events, world, recorder_faults=faults)
 
 
 def _default_roster(rows: Sequence[EpisodeMetrics]) -> list[RosterEntry] | None:
-    """SEEDS x conditions for a known partition (exact key, else its base prefix, so
+    """SEEDS x conditions for a known partition (the longest SEEDS key it equals or extends, so
     `main-r2` schedules the main seeds). Live rows with no derivable roster raise: without
     a roster, not-started cells would silently vanish."""
     if not rows:
         return None
     partition = rows[0].partition
     base = partition.split("-")[0]
-    key = partition if partition in SEEDS else base if base in SEEDS else None
+    # The longest SEEDS key equal to the partition or prefixing it before a "-" (so
+    # `main-incentive-r2` schedules the main-incentive seeds, `main-r2` the main seeds).
+    keys = [k for k in SEEDS if partition == k or partition.startswith(f"{k}-")]
+    key = max(keys, key=len) if keys else None
     if key is None:
         if rows[0].mode == "live":
             raise ValueError(

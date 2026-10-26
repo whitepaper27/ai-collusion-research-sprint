@@ -17,6 +17,7 @@ from ethwall.analysis._report import (
     AnalysisResult,
     analyze_partition,
     load_run,
+    recorded_manifest,
     write_fact_sheet,
     write_tables,
 )
@@ -50,6 +51,7 @@ __all__ = [
     "figure_trajectory",
     "load_run",
     "paired_seed_comparison",
+    "recorded_manifest",
     "roster",
     "wilson",
     "write_fact_sheet",
