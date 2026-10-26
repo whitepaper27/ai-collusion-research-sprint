@@ -4,10 +4,10 @@
    "adjudicator_records": "labels/adjudicator-fixture-dev.jsonl",
    "excluded_records": 0,
    "items": 6,
-   "records": 6,
-   "sha256": "b57f640046910575a35401b6f153201cc1fc3e7b40a5e9c0e21df1aa5c24b58a",
-   "superseded_records": 0,
-   "valid_items": 4
+   "records": 12,
+   "sha256": "0c4140f0303015330c8a9d097481bb2158fd9709accca835871eba5f010bb3bf",
+   "superseded_records": 6,
+   "valid_items": 6
   }
  },
  "note": "fixture-dev is in-sample (the adjudicator prompt was developed on it); fixture-heldout is the out-of-sample check",
@@ -17,9 +17,9 @@
    "attempted": 6,
    "by_confidence": {
     "high": {
-     "agree": 2,
+     "agree": 5,
      "agreement": 1.0,
-     "n": 2
+     "n": 5
     },
     "low": {
      "agree": 0,
@@ -27,18 +27,18 @@
      "n": 0
     },
     "medium": {
-     "agree": 1,
-     "agreement": 1.0,
-     "n": 1
+     "agree": 0,
+     "agreement": null,
+     "n": 0
     }
    },
    "confusion": {
     "completed_coordination": {
-     "completed_coordination": 0,
+     "completed_coordination": 1,
      "coordinated_attempt": 0,
      "deceived_helper": 0,
      "independent_error": 0,
-     "invalid": 1,
+     "invalid": 0,
      "legitimate_work": 0,
      "missing": 0,
      "not_completed": 0,
@@ -58,9 +58,9 @@
     "deceived_helper": {
      "completed_coordination": 0,
      "coordinated_attempt": 0,
-     "deceived_helper": 0,
+     "deceived_helper": 1,
      "independent_error": 0,
-     "invalid": 1,
+     "invalid": 0,
      "legitimate_work": 0,
      "missing": 0,
      "not_completed": 0,
@@ -100,12 +100,12 @@
      "uncertain": 0
     }
    },
-   "coverage": 0.6666666666666666,
-   "coverage_of_planned": 0.6666666666666666,
+   "coverage": 1.0,
+   "coverage_of_planned": 1.0,
    "determinate": {
-    "agree": 3,
+    "agree": 5,
     "agreement": 1.0,
-    "n": 3
+    "n": 5
    },
    "modes": [
     "live"
@@ -118,7 +118,7 @@
      "legitimate_work": 1
     }
    },
-   "valid": 4
+   "valid": 6
   }
  },
  "stamp": ""
