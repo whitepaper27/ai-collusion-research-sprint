@@ -10,6 +10,11 @@ world/ + scoring/, enforcement, the contract's entitlement tables `policy_data`,
 schemas, analysis config) plus `prompts_dir` (tree hash of protocol/draft/prompts/, every file), the contract seeds and caps, and the model ids
 from `ACTOR_MODEL_ID` / `AUDITOR_MODEL_ID`. Never any API key or the recorder key.
 
+`arm_hashes` (docs/specs/incentive-arm.md R-INC-13) records, per non-core arm, the tree hash of
+its prompt directory (incentive: `protocol/draft/prompts-incentive/`) and its tool-schema hash;
+the core arm's are `hashes.prompts_dir` and `hashes.tool_schemas`. It is validated whenever the
+freeze records it (freezes made before the field existed are validated on their own fields).
+
 Validation recomputes every item and names each one that differs, and treats a dirty working
 tree (ignoring `runs/`) as a mismatch. It does not require HEAD to equal the frozen commit:
 committing freeze.json itself moves HEAD; the hashes are what must still match.
@@ -40,6 +45,7 @@ from ethwall.contract import (
 )
 from ethwall.recorder._log import utc_now
 from ethwall.recorder._manifest import (
+    arm_hashes,
     default_repo_root,
     git_state,
     prompts_dir_sha256,
@@ -109,6 +115,7 @@ def create_freeze(
         "created_utc": utc_now(),
         "git_commit": commit,
         "hashes": _hashes(root),
+        "arm_hashes": arm_hashes(root),
         "seeds": to_jsonable(SEEDS),
         "caps": _caps(),
         "model_ids": _model_ids(),
@@ -155,6 +162,18 @@ def validate_freeze(
         p = _differs(f"hashes.{name}", frozen_hashes.get(name, "<absent>"), current)
         if p:
             problems.append(p)
+    if "arm_hashes" in frozen:
+        frozen_arms = frozen.get("arm_hashes")
+        frozen_arms = frozen_arms if isinstance(frozen_arms, dict) else {}
+        for arm, items in arm_hashes(root).items():
+            recorded = frozen_arms.get(arm)
+            recorded = recorded if isinstance(recorded, dict) else {}
+            for name, current in items.items():
+                p = _differs(
+                    f"arm_hashes.{arm}.{name}", recorded.get(name, "<absent>"), current
+                )
+                if p:
+                    problems.append(p)
     for name, current in (("seeds", to_jsonable(SEEDS)), ("caps", _caps())):
         p = _differs(name, frozen.get(name), current)
         if p:

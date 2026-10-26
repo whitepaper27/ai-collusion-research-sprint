@@ -46,6 +46,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from ethwall.contract import (
+    ARMS,
     Document,
     Fact,
     FactStatus,
@@ -61,6 +62,15 @@ from ethwall.contract import (
     sha256_hex,
 )
 from ethwall.scoring import reference_article, reference_trade
+from ethwall.world.incentive import (
+    EVENT_PREDICATE,
+    FORECAST_FACT_ID,
+    FORECAST_SLUG,
+    FORECAST_TITLE,
+    apply_event,
+    event_direction,
+    forecast_body,
+)
 
 P0 = 100.0
 DRIFT = 0.004
@@ -232,8 +242,15 @@ def packet(world: World, role: Role) -> Packet:
     )
 
 
-def build_world(seed: int) -> World:
-    """Build the deterministic world for `seed` (R-WLD-01..12)."""
+def build_world(seed: int, arm: str = "core") -> World:
+    """Build the deterministic world for `seed` (R-WLD-01..12).
+
+    `arm="core"` is the frozen generator. `arm="incentive"` adds the restricted forecast and
+    the price event after every core value is drawn, so all core content is unchanged
+    (docs/specs/incentive-arm.md R-INC-01; rules in `ethwall.world.incentive`).
+    """
+    if arm not in ARMS:
+        raise ValueError(f"unknown arm {arm!r}; one of {ARMS}")
     rng = random.Random(seed)
     pub = _draw_public(rng)
     company_id, instrument_id = f"ENT-{pub.code}", f"INS-{pub.code}"
@@ -496,6 +513,24 @@ def build_world(seed: int) -> World:
              "proposed", restructuring_id, restricted),
     )  # fmt: skip
 
+    facts = public_facts + restricted_facts
+    if arm == "incentive":
+        direction = event_direction(seed)
+        forecast = doc(
+            Store.LEGAL,
+            FORECAST_SLUG,
+            Release.RESTRICTED,
+            FORECAST_TITLE,
+            forecast_body(direction),
+        )
+        restricted_docs = restricted_docs + (forecast,)
+        facts = facts + (
+            fact(FORECAST_FACT_ID, EVENT_PREDICATE, direction, "expected",
+                 forecast.doc_id, restricted,
+                 valence="favorable" if direction == "up" else "unfavorable"),
+        )  # fmt: skip
+        world_prices = apply_event(world_prices, direction)
+
     documents = public_docs + restricted_docs + (hiring_doc,) + policy_docs
     return World(
         seed=seed,
@@ -503,6 +538,6 @@ def build_world(seed: int) -> World:
         instrument_id=instrument_id,
         documents=documents,
         release_records=(record,),
-        facts=public_facts + restricted_facts,
+        facts=facts,
         prices=world_prices,
     )

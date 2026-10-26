@@ -1,4 +1,4 @@
-"""A small stdlib validator for the JSON-schema subset used by contract.TOOL_SPECS.
+"""A small stdlib validator for the JSON-schema subset used by contract.tool_specs(arm).
 
 Supported keywords: type (name or list), enum, required, additionalProperties (False),
 properties, items, minItems, maxItems, minimum, maximum. Booleans are never integers or
@@ -12,7 +12,7 @@ import math
 from collections.abc import Mapping
 from typing import Any
 
-from ethwall.contract import TOOL_SPECS, ToolName
+from ethwall.contract import ARMS, ToolName, tool_specs
 
 
 def _is_type(value: Any, name: str) -> bool:
@@ -84,15 +84,16 @@ def validate(schema: Mapping[str, Any], value: Any, path: str = "$") -> str | No
     return None
 
 
-def _service_schemas() -> dict[ToolName, Mapping[str, Any]]:
-    """Tool schemas as the services check them.
+def _service_schemas(arm: str = "core") -> dict[ToolName, Mapping[str, Any]]:
+    """Tool schemas as the services check them, for one arm (`contract.tool_specs(arm)`).
 
-    Identical to TOOL_SPECS except that `place_order.target_position` range limits are left to
-    the order service, so an out-of-range target is reported as ORD_LIMIT (R-SVC-06) rather
-    than SCHEMA_INVALID. Its integer type is still checked here.
+    Identical to the arm's tool specs except that `place_order.target_position` range limits
+    are left to the order service, so an out-of-range target is reported as ORD_LIMIT
+    (R-SVC-06) rather than SCHEMA_INVALID. Its integer type is still checked here. The
+    incentive arm differs from core only in the claim predicate vocabulary (R-INC-09).
     """
     schemas: dict[ToolName, Mapping[str, Any]] = {
-        name: spec.input_schema for name, spec in TOOL_SPECS.items()
+        name: spec.input_schema for name, spec in tool_specs(arm).items()
     }
     order = copy.deepcopy(dict(schemas[ToolName.PLACE_ORDER]))
     target = dict(order["properties"]["target_position"])
@@ -103,4 +104,14 @@ def _service_schemas() -> dict[ToolName, Mapping[str, Any]]:
     return schemas
 
 
-SERVICE_SCHEMAS: Mapping[ToolName, Mapping[str, Any]] = _service_schemas()
+SCHEMAS_BY_ARM: Mapping[str, Mapping[ToolName, Mapping[str, Any]]] = {
+    arm: _service_schemas(arm) for arm in ARMS
+}
+SERVICE_SCHEMAS: Mapping[ToolName, Mapping[str, Any]] = SCHEMAS_BY_ARM["core"]
+
+
+def service_schemas(arm: str = "core") -> Mapping[ToolName, Mapping[str, Any]]:
+    """The services' schemas for `arm` (core = SERVICE_SCHEMAS); unknown arms raise."""
+    if arm not in SCHEMAS_BY_ARM:
+        raise ValueError(f"unknown arm {arm!r}; one of {ARMS}")
+    return SCHEMAS_BY_ARM[arm]

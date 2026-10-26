@@ -5,6 +5,12 @@ A directory hash is SHA-256 over the canonical JSON list of sorted
 `*.py`, `*.md` and `*.json` files; the prompts directory includes every file (prompts may be
 `.txt`). `__pycache__` is always skipped. A component whose directories are all absent hashes
 to None.
+
+Arms (docs/specs/incentive-arm.md R-INC-10, R-INC-13): a run manifest records `arm`,
+`control_kind` (the effective kind) and `hashes.tool_schemas` = the hash of
+`tool_specs(arm)` (unchanged for core). `arm_hashes()` gives, per non-core arm, the tree hash
+of its prompt directory and its tool-schema hash (core's are `prompts_dir` / `tool_schemas`);
+the freeze records and validates it.
 """
 
 from __future__ import annotations
@@ -17,22 +23,27 @@ from pathlib import Path
 from typing import Any
 
 from ethwall.contract import (
+    ARMS,
     CLEARANCE_BY_ROLE,
     DUTY_REPORT_ROLES,
     MAX_TRANSPORT_RETRIES,
     READS_BY_ROLE,
     SCHEMA_VERSION,
-    TOOL_SPECS,
     TOOLS_BY_ROLE,
     EpisodeConfig,
     World,
     canonical_json,
     sha256_hex,
+    tool_specs,
 )
 from ethwall.recorder._log import utc_now
 
 CODE_SUFFIXES = frozenset({".py", ".md", ".json"})
 PROMPTS_DIR = "protocol/draft/prompts"
+PROMPTS_DIR_BY_ARM = {
+    "core": PROMPTS_DIR,
+    "incentive": "protocol/draft/prompts-incentive",
+}
 
 # component -> directories (relative to the repo root) it covers.
 WORLD_GENERATOR_DIRS = (
@@ -78,8 +89,9 @@ def hash_dirs(
     return sha256_hex(canonical_json(sorted(entries)))
 
 
-def tool_schemas_sha256() -> str:
-    return sha256_hex(canonical_json(TOOL_SPECS))
+def tool_schemas_sha256(arm: str = "core") -> str:
+    """SHA-256 of the canonical tool specs of `arm` (core = contract.TOOL_SPECS)."""
+    return sha256_hex(canonical_json(tool_specs(arm)))
 
 
 def policy_data_sha256() -> str:
@@ -111,6 +123,21 @@ def source_hashes(repo_root: str | os.PathLike[str]) -> dict[str, str | None]:
 def prompts_dir_sha256(repo_root: str | os.PathLike[str]) -> str | None:
     """Tree hash of protocol/draft/prompts/ (every file). Not the same as PromptSet.sha256."""
     return hash_dirs(repo_root, (PROMPTS_DIR,), suffixes=None)
+
+
+def arm_hashes(repo_root: str | os.PathLike[str]) -> dict[str, dict[str, str | None]]:
+    """Per non-core arm: its prompt directory's tree hash (every file) and its tool-schema
+    hash. The core arm's are the existing `prompts_dir` and `tool_schemas` hashes."""
+    return {
+        arm: {
+            "prompts_dir": hash_dirs(
+                repo_root, (PROMPTS_DIR_BY_ARM[arm],), suffixes=None
+            ),
+            "tool_schemas": tool_schemas_sha256(arm),
+        }
+        for arm in ARMS
+        if arm != "core"
+    }
 
 
 def _git(repo_root: Path, *args: str) -> str | None:
@@ -161,6 +188,7 @@ def build_manifest(
     hashes: Mapping[str, str | None] = {
         "prompts": prompts_sha256,
         **source_hashes(root),
+        "tool_schemas": tool_schemas_sha256(config.arm),
     }
     return {
         "schema_version": SCHEMA_VERSION,
@@ -175,6 +203,8 @@ def build_manifest(
         "model_id": config.model_id,
         "policy": config.policy,
         "control": config.control,
+        "arm": config.arm,
+        "control_kind": config.effective_control_kind,
         "model_params": {
             "max_tokens": config.max_tokens,
             "temperature": config.temperature,

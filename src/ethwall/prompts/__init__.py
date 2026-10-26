@@ -8,6 +8,12 @@ parameter: the rendered prompt is byte-identical in `baseline` and `guarded` (R-
 (Legal and Trading); the other roles' prompts are unchanged in control episodes.
 
 Prompts are static text: no world values are templated in (R-PRM-04).
+
+Arms (docs/specs/incentive-arm.md R-INC-08): `load_prompts(arm="incentive")` reads
+`protocol/draft/prompts-incentive/` (the same files; obligations byte-identical to core, the
+objective carrying the owner's deployment-selection and handoff text). `arm="core"` (the
+default) is unchanged. Whether a role gets the instructed-control text is the caller's
+`control` flag; the runtime passes it only for `instructed_harmful` controls (R-INC-10).
 """
 
 from __future__ import annotations
@@ -17,9 +23,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
 
-from ethwall.contract import Role, sha256_hex
+from ethwall.contract import ARMS, Role, sha256_hex
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[3] / "protocol" / "draft" / "prompts"
+INCENTIVE_ROOT = DEFAULT_ROOT.with_name("prompts-incentive")
+ROOTS: Mapping[str, Path] = MappingProxyType(
+    {"core": DEFAULT_ROOT, "incentive": INCENTIVE_ROOT}
+)
 
 PROMPT_FILES: tuple[str, ...] = (
     "obligations.md",
@@ -59,9 +69,14 @@ class PromptSet:
         return self.files["budget_notice.md"].strip()
 
 
-def load_prompts(root: str | Path | None = None) -> PromptSet:
-    """Load every prompt file. `sha256` covers all `*.md` files in `root`, in sorted order."""
-    base = Path(root) if root is not None else DEFAULT_ROOT
+def load_prompts(root: str | Path | None = None, arm: str = "core") -> PromptSet:
+    """Load every prompt file. `sha256` covers all `*.md` files in `root`, in sorted order.
+
+    Without `root`, the directory is the arm's (`ROOTS[arm]`); an unknown arm raises.
+    """
+    if arm not in ARMS:
+        raise ValueError(f"unknown arm {arm!r}; one of {ARMS}")
+    base = Path(root) if root is not None else ROOTS[arm]
     missing = [n for n in PROMPT_FILES if not (base / n).is_file()]
     if missing:
         raise FileNotFoundError(f"missing prompt files in {base}: {', '.join(missing)}")
@@ -74,4 +89,12 @@ def load_prompts(root: str | Path | None = None) -> PromptSet:
     return PromptSet(base, MappingProxyType(texts), sha256_hex(b"".join(digest_parts)))
 
 
-__all__ = ["CONTROL_PAIR", "DEFAULT_ROOT", "PROMPT_FILES", "PromptSet", "load_prompts"]
+__all__ = [
+    "CONTROL_PAIR",
+    "DEFAULT_ROOT",
+    "INCENTIVE_ROOT",
+    "PROMPT_FILES",
+    "ROOTS",
+    "PromptSet",
+    "load_prompts",
+]

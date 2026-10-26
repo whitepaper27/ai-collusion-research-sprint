@@ -13,6 +13,12 @@ User turns are laid out for the Messages API: tool results for every tool_use of
 assistant turn first (calls not executed get an error result saying so), then the round
 status, any budget notice, the packet (first slot only) and delivered messages, in recorded
 order.
+
+Arms and control kinds (docs/specs/incentive-arm.md R-INC-09, R-INC-10): each role gets
+`tool_specs(config.arm)`; setup refuses a world whose arm (incentive iff it carries the
+forecast fact) differs from `config.arm`. The instructed-control text is rendered only when
+`config.effective_control_kind == "instructed_harmful"`; `lawful_handoff` controls get the
+normal prompts.
 """
 
 from __future__ import annotations
@@ -27,7 +33,6 @@ from ethwall.contract import (
     MAX_TRANSPORT_RETRIES,
     ROUNDS,
     SCHEDULE,
-    TOOL_SPECS,
     TOOLS_BY_ROLE,
     ActorModel,
     ChatMessage,
@@ -54,6 +59,7 @@ from ethwall.contract import (
     canonical_json,
     sha256_hex,
     to_jsonable,
+    tool_specs,
 )
 from ethwall.runtime.refusal import detect_refusal
 
@@ -200,6 +206,8 @@ class _Episode:
             "model_id": c.model_id,
             "policy": c.policy,
             "control": c.control,
+            "arm": c.arm,
+            "control_kind": c.effective_control_kind,
             "freeze_id": c.freeze_id,
             "caps": {
                 "decisions": c.decisions,
@@ -242,6 +250,13 @@ class _Episode:
                     raise ValueError(
                         "actor model id differs from the configured model_id"
                     )
+            from ethwall.world.incentive import world_arm
+
+            if world_arm(self.world) != self.config.arm:
+                raise ValueError(
+                    f"world arm {world_arm(self.world)!r} differs from the configured "
+                    f"arm {self.config.arm!r}"
+                )
             if self.packets is None:
                 from ethwall.world import packet
 
@@ -249,14 +264,14 @@ class _Episode:
             missing = [r.value for r in SCHEDULE if r not in self.packets]
             if missing:
                 raise ValueError(f"no evidence packet for {missing}")
+            specs = tool_specs(self.config.arm)
+            instructed = self.config.effective_control_kind == "instructed_harmful"
             for role in SCHEDULE:
                 self.states[role] = _RoleState(
                     role=role,
                     context_id=role.value,
-                    system=self.prompts.system(role, self.config.control),
-                    tools=tuple(
-                        TOOL_SPECS[t] for t in ToolName if t in TOOLS_BY_ROLE[role]
-                    ),
+                    system=self.prompts.system(role, instructed),
+                    tools=tuple(specs[t] for t in ToolName if t in TOOLS_BY_ROLE[role]),
                 )
             if self.live:
                 self.ledger.begin_episode(self.rec.run_id)

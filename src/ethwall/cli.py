@@ -8,6 +8,10 @@
     ethwall doctor
     ethwall export-review | label | audit   (audit study; see `ethwall <cmd> -h`)
 
+Arms and control kinds (docs/specs/incentive-arm.md R-INC-10): `run --arm core|incentive`
+(default core) and `--control-kind none|instructed_harmful|lawful_handoff` (default
+instructed_harmful with `--control`, else none; a kind other than none needs `--control`).
+
 Live (paid) runs need `--confirm-spend`, ACTOR_MODEL_ID, ANTHROPIC_API_KEY,
 ETHWALL_RECORDER_KEY and the ETHWALL_PRICE_* pricing basis; main partitions also need a valid
 `--freeze`. Anything missing exits 2 before any model call. `doctor` reports presence only,
@@ -28,6 +32,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ethwall.contract import (
+    ARMS,
+    CONTROL_KINDS,
     INTERRUPTED_STATES,
     LIVE_PARTITIONS,
     Condition,
@@ -120,6 +126,18 @@ def exit_code_for(states: Sequence[TerminalState]) -> int:
     return 1 if any(s in INTERRUPTED_STATES for s in states) else 0
 
 
+def resolve_control_kind(args: argparse.Namespace) -> str:
+    """The run's control kind: explicit `--control-kind`, else instructed_harmful with
+    `--control`, else none. A kind other than none needs `--control`; `--control` with kind
+    none is contradictory. Raises UsageError."""
+    kind = args.control_kind or ("instructed_harmful" if args.control else "none")
+    if kind != "none" and not args.control:
+        raise UsageError(f"--control-kind {kind} needs --control")
+    if args.control and kind == "none":
+        raise UsageError("--control needs a control kind other than none")
+    return kind
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     from ethwall.enforcement import make_policy
     from ethwall.models import AnthropicActor, mock_model
@@ -134,8 +152,10 @@ def cmd_run(args: argparse.Namespace) -> int:
     from ethwall.runtime import run_episode
     from ethwall.services import make_services
     from ethwall.world import build_world
+    from ethwall.world.incentive import world_from_manifest
 
     mode = Mode(args.mode)
+    control_kind = resolve_control_kind(args)
     conditions = [Condition(c) for c in args.condition.split(",")]
     root = Path(args.runs_root)
     if expected_mode(args.partition) != mode:
@@ -154,7 +174,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         ledger = SpendLedger.for_partition(args.partition, pricing, args.spend_root)
     elif not args.policy:
         raise UsageError("mock/fixture runs need --policy")
-    prompts = load_prompts()
+    prompts = load_prompts(arm=args.arm)
     key, key_id = recorder_key(mode)
     model_id = live_model.model_id if live_model else f"mock-{args.policy}"
     states: list[TerminalState] = []
@@ -169,6 +189,8 @@ def cmd_run(args: argparse.Namespace) -> int:
                 policy=args.policy if mode != Mode.LIVE else None,
                 control=args.control,
                 freeze_id=args.freeze,
+                arm=args.arm,
+                control_kind=control_kind,
             )
             try:
                 config.validate()
@@ -182,7 +204,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                     print(f"ethwall: stopping batch: {e}", file=sys.stderr)
                     return max(exit_code_for(states), 2)
                 raise UsageError(str(e)) from e
-            world = build_world(seed)
+            world = build_world(seed, args.arm)
             model = live_model or mock_model(args.policy, world)
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             run_id = new_run_id(config, stamp, secrets.token_hex(2))
@@ -196,6 +218,9 @@ def cmd_run(args: argparse.Namespace) -> int:
             )
             manifest["control"] = args.control
             manifest["recorder_key_id"] = key_id
+            # Every later reader rebuilds the world from this manifest (R-INC-11).
+            if world_from_manifest(manifest).sha256() != world.sha256():
+                raise RuntimeError("manifest does not reconstruct the episode's world")
             (run_dir / "manifest.json").write_text(
                 json.dumps(manifest, sort_keys=True, indent=1), encoding="utf-8"
             )
@@ -204,7 +229,9 @@ def cmd_run(args: argparse.Namespace) -> int:
                 config,
                 world=world,
                 model=model,
-                services=make_services(world, make_policy(condition), recorder),
+                services=make_services(
+                    world, make_policy(condition), recorder, arm=args.arm
+                ),
                 recorder=recorder,
                 prompts=prompts,
                 ledger=ledger,
@@ -370,7 +397,14 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--mode", choices=[m.value for m in Mode], default="mock")
     r.add_argument("--policy", help="mock policy (mock/fixture mode)")
     r.add_argument("--partition", required=True)
-    r.add_argument("--control", action="store_true", help="instructed-control episodes")
+    r.add_argument("--control", action="store_true", help="control episodes")
+    r.add_argument("--arm", choices=list(ARMS), default="core")
+    r.add_argument(
+        "--control-kind",
+        choices=list(CONTROL_KINDS),
+        default=None,
+        help="default: instructed_harmful with --control, else none",
+    )
     r.add_argument("--freeze", help="freeze id (required for main partitions)")
     r.add_argument(
         "--confirm-spend", action="store_true", help="owner's go for paid calls"
