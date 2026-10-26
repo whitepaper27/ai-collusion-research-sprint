@@ -520,3 +520,28 @@ def test_audit_final_stamp_cannot_remove_mock(exports, live, tmp_path):
                    "--labels-dir", str(labels), "--stamp", "DRAFT", "--n-boot", "50",
                    "--live", f"{exports['heldout']}={pred}"])  # fmt: skip
     assert rc == 2  # duplicate panel name
+
+
+def test_one_spend_root_default_for_actor_auditor_and_adjudicator(
+    exports, tmp_path, monkeypatch, capsys
+):
+    """R-REF-09: ETHWALL_SPEND_ROOT is the default root of `run`, `audit run` and
+    `reference run`, so the caps can never be split between commands."""
+    root = tmp_path / "shared-spend"
+    monkeypatch.setenv("ETHWALL_SPEND_ROOT", str(root))
+    args = cli.build_parser().parse_args(["run", "--seeds", "0", "--partition", "x"])
+    assert Path(args.spend_root) == root
+    _no_live_model(monkeypatch)
+    _live_env(monkeypatch)
+    rc = cli.main(["reference", "run", "--exports", str(exports["dev"]), "--mode", "live",
+                   "--confirm-spend", "--labels-dir", str(tmp_path / "l"),
+                   "--freeze-path", str(tmp_path / "none.json")])  # fmt: skip
+    assert rc == 2
+    assert str(root.resolve()) in capsys.readouterr().err
+    monkeypatch.setenv("AUDITOR_MODEL_ID", "claude-haiku-4-5")
+    for k, v in zip(PRICE_KEYS, ("1.0", "5.0", "test", "2026-10-25")):
+        monkeypatch.setenv(k, v)
+    rc = cli.main(["audit", "run", "--exports", str(exports["dev"]), "--mode", "live",
+                   "--confirm-spend", "--out", str(tmp_path / "p.jsonl")])  # fmt: skip
+    assert rc == 2
+    assert str(root.resolve()) in capsys.readouterr().err

@@ -46,7 +46,6 @@ from ethwall.contract import (
     TextBlock,
     View,
 )
-from ethwall.recorder._manifest import default_repo_root
 
 VIEWS = tuple(v.value for v in View)
 POSITIVE = {
@@ -475,14 +474,12 @@ def audit_final(argv: list[str]) -> int:
 
 # ----------------------------------------------------------------------------- reference
 
-SPEND_ROOT_ENV = "ETHWALL_SPEND_ROOT"
-
 
 def default_spend_root() -> str:
-    """`ETHWALL_SPEND_ROOT` when set, else `<repo root>/spend` of the running checkout."""
-    return os.environ.get(SPEND_ROOT_ENV, "").strip() or str(
-        default_repo_root() / "spend"
-    )
+    """The shared spend-root default (`ethwall.spend.default_spend_root`)."""
+    from ethwall.spend import default_spend_root as shared
+
+    return shared()
 
 
 def _check_spend_root(root: Path, allow_empty: bool) -> None:
@@ -499,7 +496,7 @@ def _check_spend_root(root: Path, allow_empty: bool) -> None:
         return
     raise UsageError(
         f"spend root {root.resolve()} holds no ledger: point --spend-root or "
-        f"{SPEND_ROOT_ENV} at the root with the earlier paid ledgers "
+        "ETHWALL_SPEND_ROOT at the root with the earlier paid ledgers "
         "(or pass --allow-empty-spend-root for the first paid call ever)"
     )
 

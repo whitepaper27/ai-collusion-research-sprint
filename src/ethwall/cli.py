@@ -39,6 +39,7 @@ from ethwall.contract import (
     to_jsonable,
 )
 from ethwall.recorder._manifest import default_repo_root
+from ethwall.spend import default_spend_root
 
 REPO_ROOT = default_repo_root()
 
@@ -377,7 +378,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--confirm-spend", action="store_true", help="owner's go for paid calls"
     )
     r.add_argument("--runs-root", default=str(REPO_ROOT / "runs"))
-    r.add_argument("--spend-root", default=str(REPO_ROOT / "spend"))
+    r.add_argument("--spend-root", default=default_spend_root())
     r.set_defaults(func=cmd_run)
 
     v = sub.add_parser("verify", help="verify recorded runs")

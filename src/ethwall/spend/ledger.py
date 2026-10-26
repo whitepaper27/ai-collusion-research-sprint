@@ -57,6 +57,7 @@ PRICE_ENV_KEYS = (
     "ETHWALL_PRICE_DATE",
 )
 LOCK_NAME = ".spend.lock"
+SPEND_ROOT_ENV = "ETHWALL_SPEND_ROOT"
 LOCK_TIMEOUT_S = 30.0
 _PARTITION_BATCH = {
     "main": "main",
@@ -203,6 +204,17 @@ def pricing_for_model(
                 "fix one of them before paid calls"
             )
     return pricing
+
+
+def default_spend_root(env: Mapping[str, str] | None = None) -> str:
+    """The spend root every paid command defaults to (actor, auditor, adjudicator).
+
+    `ETHWALL_SPEND_ROOT` when set, else `<checkout>/spend`. One shared default, so the caps
+    (summed across the ledgers under one root) can never be split between commands.
+    """
+    env = os.environ if env is None else env
+    root = env.get(SPEND_ROOT_ENV, "").strip()
+    return root or str(Path(__file__).resolve().parents[3] / "spend")
 
 
 def batch_for_partition(partition: str) -> str:
