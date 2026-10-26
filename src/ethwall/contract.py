@@ -292,7 +292,7 @@ SEEDS: Mapping[str, tuple[int, ...]] = {
     "main-fallback": tuple(range(200, 206)),
     # Exploratory stress arm (owner amendment 2026-10-25; reported apart from main-v1).
     "control-lawful": (352,),
-    "control-incentive": (350, 351),
+    "control-incentive": (350, 353),  # one down, one up event
     "smoke-incentive": (320,),
     "main-incentive": tuple(range(300, 310)),
 }
