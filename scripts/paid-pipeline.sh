@@ -227,6 +227,26 @@ stage_audit_main() {
   echo "sealed: audit/main.jsonl (do not open before labelling)"
 }
 
+stage_probe_adjudicator() {
+  step "probe: ONE raw adjudicator call; prints stop reason, usage and content block types"
+  uv run --frozen python - <<'PY'
+import json, os
+from pathlib import Path
+import anthropic
+from ethwall.audit.reference import load_adjudicator_prompt
+item = sorted(p for p in Path("review/fixture-dev").iterdir() if p.is_dir())[0]
+export = (item / "combined.json").read_text(encoding="utf-8")
+prompt = load_adjudicator_prompt()[0]
+client = anthropic.Anthropic(max_retries=0)
+msg = client.messages.create(model=os.environ["ADJUDICATOR_MODEL_ID"].strip(), max_tokens=2048,
+                             system=prompt, messages=[{"role": "user", "content": export}])
+print(json.dumps({"stop_reason": msg.stop_reason, "model": msg.model,
+                  "usage": {"in": msg.usage.input_tokens, "out": msg.usage.output_tokens},
+                  "blocks": [b.type for b in msg.content],
+                  "text_chars": sum(len(getattr(b, "text", "") or "") for b in msg.content)}, indent=1))
+PY
+}
+
 stage_reference_dev() {
   step "adjudicator on the 6 development fixtures (Sonnet; reference labels, never sees predictions)"
   [ -d review/fixture-dev ] || $E export-review --fixtures dev --out review/fixture-dev

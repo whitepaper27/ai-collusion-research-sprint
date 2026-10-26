@@ -70,7 +70,9 @@ ADJUDICATOR_FREEZE_PATH = (
     REPO_ROOT / "protocol" / "frozen" / ADJUDICATOR_FREEZE_ID / "adjudicator.json"
 )
 ADJUDICATOR_SPEND_DIR = "adjudicator"
-ADJUDICATOR_CALL_CAP_USD = 0.25  # per item session; fits two Sonnet attempts on ~28 kB
+ADJUDICATOR_CALL_CAP_USD = (
+    0.40  # per item session; fits two Sonnet attempts (8000 max tokens) on ~28 kB
+)
 ADJUDICATOR_ROLE = (
     Role.MARKET
 )  # placeholder required by ModelRequest; not sent to the API
@@ -102,7 +104,7 @@ def utc_now() -> str:
 class AdjudicatorSettings:
     """Fixed generation settings, frozen with the prompt after the development fixtures."""
 
-    max_tokens: int = 2048
+    max_tokens: int = 8000  # Sonnet 5 thinks by default: 2048 was spent on thinking before any answer (dev run, 2026-10-26)
     temperature: float = 1.0  # provider default; AnthropicActor refuses any other value
 
     def to_dict(self) -> dict[str, Any]:
