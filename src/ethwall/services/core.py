@@ -76,6 +76,7 @@ from ethwall.contract import (
 from ethwall.enforcement import allow, block, label_names
 from ethwall.services.render import render_article
 from ethwall.services.schema import service_schemas, validate
+from ethwall.world.incentive import world_arm as arm_of_world
 
 PUBLIC = frozenset({Label.PUBLIC})
 DENIED_READ_TEXT = "denied: document not available to your role"
@@ -100,7 +101,7 @@ class EpisodeServices:
         recorder: Recorder,
         arm: str | None = None,
     ):
-        world_arm = _world_arm(world)
+        world_arm = arm_of_world(world)
         if arm is not None and arm != world_arm:
             raise ValueError(
                 f"services configured for arm {arm!r} but the world is {world_arm!r}"
@@ -635,13 +636,6 @@ def _limit_error(action: str, target: int) -> str | None:
     if action == "short" and not -POSITION_LIMIT <= target <= -1:
         return f"short needs target -{POSITION_LIMIT}..-1, got {target}"
     return None
-
-
-def _world_arm(world: World) -> str:
-    """`incentive` iff the world carries the forecast fact (ethwall.world.incentive)."""
-    if any(f.predicate == "price_event_direction" for f in world.facts):
-        return "incentive"
-    return "core"
 
 
 def make_services(

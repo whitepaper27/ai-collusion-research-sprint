@@ -21,7 +21,8 @@ generator. `build_world(seed, "incentive")` is the core world for the same seed 
 
 `world_from_manifest` is the one way to rebuild a recorded run's world: it reads the recorded
 seed and arm (absent arm = core, so main-v1 runs evaluate exactly as before). It never checks
-`world_sha256`: some early recorded runs predate a generator fix (see docs/specs).
+`world_sha256` for core runs (some early recorded core runs predate a generator fix); for the
+incentive arm a recorded `world_sha256` must match.
 
 `benchmark_orders` defines the R-INC-07 trading strategies as {round: target position}.
 """
@@ -108,7 +109,12 @@ def world_arm(world: World) -> str:
 
 
 def world_from_manifest(manifest: Mapping[str, Any]) -> World:
-    """Rebuild a recorded run's world from its manifest's seed and arm (R-INC-11)."""
+    """Rebuild a recorded run's world from its manifest's seed and arm (R-INC-11).
+
+    For a non-core arm a recorded `world_sha256` must match the rebuilt world (every incentive
+    run postdates the generator fix), so a later generator change can never silently re-score
+    an incentive run against a different world. Core runs are not checked (see the module
+    docstring)."""
     from ethwall.world._build import build_world
 
     seed = manifest.get("seed")
@@ -117,7 +123,49 @@ def world_from_manifest(manifest: Mapping[str, Any]) -> World:
     arm = manifest.get("arm") or "core"
     if arm not in ARMS:
         raise ValueError(f"manifest names unknown arm {arm!r}; one of {ARMS}")
-    return build_world(seed, arm)
+    world = build_world(seed, arm)
+    recorded = manifest.get("world_sha256")
+    if arm != "core" and recorded is not None and recorded != world.sha256():
+        raise ValueError(
+            f"recorded world_sha256 {recorded!r} differs from the rebuilt {arm} world for "
+            f"seed {seed}; the world generator changed since this run"
+        )
+    return world
+
+
+INCENTIVE_PARTITIONS: tuple[str, ...] = (
+    "control-lawful",
+    "control-incentive",
+    "smoke-incentive",
+    "main-incentive",
+)
+CONTROL_KIND_BY_PARTITION: Mapping[str, str] = {
+    "control-lawful": "lawful_handoff",
+    "control-incentive": "instructed_harmful",
+}
+
+
+def _family(partition: str, names: tuple[str, ...]) -> str | None:
+    """The name `partition` equals or extends with "-..." (a rerun like `main-incentive-r2`)."""
+    hits = [n for n in names if partition == n or partition.startswith(f"{n}-")]
+    return max(hits, key=len) if hits else None
+
+
+def live_partition_problem(partition: str, arm: str, control_kind: str) -> str | None:
+    """Why a live run may not use (partition, arm, control kind), or None (R-INC-10).
+
+    Live arms never share partitions: incentive partitions (and their reruns) take only the
+    incentive arm, every other live partition only core; `control-lawful` runs only
+    lawful_handoff controls and `control-incentive` only instructed_harmful ones.
+    """
+    family = _family(partition, INCENTIVE_PARTITIONS)
+    wanted = "incentive" if family else "core"
+    if arm != wanted:
+        return f"live partition {partition!r} takes only the {wanted} arm, not {arm!r}"
+    kind = CONTROL_KIND_BY_PARTITION.get(family or "")
+    if kind is not None and control_kind != kind:
+        return f"live partition {partition!r} takes only {kind} controls, not {control_kind!r}"
+    return None
 
 
 def public_signal(world: World) -> int:
@@ -159,16 +207,19 @@ def benchmark_orders(world: World) -> dict[str, dict[int, int]]:
 __all__ = [
     "BALANCED_SEEDS",
     "BENCHMARKS",
+    "CONTROL_KIND_BY_PARTITION",
     "EVENT_FACTORS",
     "EVENT_PREDICATE",
     "FORECAST_FACT_ID",
     "FORECAST_SLUG",
     "FORECAST_TITLE",
+    "INCENTIVE_PARTITIONS",
     "apply_event",
     "benchmark_orders",
     "event_direction",
     "forecast_body",
     "forecast_fact",
+    "live_partition_problem",
     "public_signal",
     "world_arm",
     "world_from_manifest",

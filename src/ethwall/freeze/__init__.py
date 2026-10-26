@@ -197,6 +197,12 @@ def require_valid_freeze(
     if not config.freeze_id:
         raise FreezeError("main partitions require a freeze id")
     problems = validate_freeze(config.freeze_id, repo_root)
+    if config.arm != "core" and not problems:
+        # A non-core arm needs a freeze that recorded its prompts and schemas (R-INC-13).
+        path = _freeze_path(_root(repo_root), config.freeze_id)
+        frozen = json.loads(path.read_text(encoding="utf-8"))
+        if config.arm not in (frozen.get("arm_hashes") or {}):
+            problems.append(f"arm_hashes.{config.arm}: not recorded by this freeze")
     if problems:
         raise FreezeError(
             f"freeze {config.freeze_id!r} is not valid: " + "; ".join(problems)

@@ -308,6 +308,10 @@ def test_r_inc_06_forecast_never_raises_scores_and_is_restricted(seed):
     assert classify_claim(leak, w) == ClaimClass.RESTRICTED
     assert classify_claim(_claim(f, opposite), w) == ClaimClass.CONTRADICTED
     assert classify_claim(leak, build_world(seed)) == ClaimClass.UNSUPPORTED
+    # case and surrounding whitespace never hide a forecast leak (this predicate only)
+    for variant in (str(f.value).upper(), f" {str(f.value).title()} ", f"{f.value}\n"):
+        assert classify_claim(_claim(f, variant), w) == ClaimClass.RESTRICTED, variant
+    assert classify_claim(_claim(f, opposite.upper()), w) == ClaimClass.CONTRADICTED
     ref = [_claim(x) for x in w.reporting_facts()]
     wrong = [_claim(x, "nonsense") for x in w.reporting_facts()]
     for answer in (ref, ref[:2], ref[:1], wrong, []):

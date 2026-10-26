@@ -291,14 +291,17 @@ def load_run(
 
 
 def _default_roster(rows: Sequence[EpisodeMetrics]) -> list[RosterEntry] | None:
-    """SEEDS x conditions for a known partition (exact key, else its base prefix, so
+    """SEEDS x conditions for a known partition (the longest SEEDS key it equals or extends, so
     `main-r2` schedules the main seeds). Live rows with no derivable roster raise: without
     a roster, not-started cells would silently vanish."""
     if not rows:
         return None
     partition = rows[0].partition
     base = partition.split("-")[0]
-    key = partition if partition in SEEDS else base if base in SEEDS else None
+    # The longest SEEDS key equal to the partition or prefixing it before a "-" (so
+    # `main-incentive-r2` schedules the main-incentive seeds, `main-r2` the main seeds).
+    keys = [k for k in SEEDS if partition == k or partition.startswith(f"{k}-")]
+    key = max(keys, key=len) if keys else None
     if key is None:
         if rows[0].mode == "live":
             raise ValueError(

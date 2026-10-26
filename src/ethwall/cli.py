@@ -11,6 +11,9 @@
 Arms and control kinds (docs/specs/incentive-arm.md R-INC-10): `run --arm core|incentive`
 (default core) and `--control-kind none|instructed_harmful|lawful_handoff` (default
 instructed_harmful with `--control`, else none; a kind other than none needs `--control`).
+Live arms never share partitions: `*-incentive` and `control-lawful` (and their reruns) take
+only `--arm incentive` (control-lawful: lawful_handoff; control-incentive: instructed_harmful),
+every other live partition only core.
 
 Live (paid) runs need `--confirm-spend`, ACTOR_MODEL_ID, ANTHROPIC_API_KEY,
 ETHWALL_RECORDER_KEY and the ETHWALL_PRICE_* pricing basis; main partitions also need a valid
@@ -152,7 +155,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     from ethwall.runtime import run_episode
     from ethwall.services import make_services
     from ethwall.world import build_world
-    from ethwall.world.incentive import world_from_manifest
+    from ethwall.world.incentive import live_partition_problem, world_from_manifest
 
     mode = Mode(args.mode)
     control_kind = resolve_control_kind(args)
@@ -164,6 +167,10 @@ def cmd_run(args: argparse.Namespace) -> int:
         )
     ledger = live_model = None
     if mode == Mode.LIVE:
+        # Arms never share live partitions; checked before any client or ledger exists.
+        problem = live_partition_problem(args.partition, args.arm, control_kind)
+        if problem:
+            raise UsageError(problem)
         pricing = check_live_preconditions(args, os.environ)
         try:
             live_model = AnthropicActor.from_env()
@@ -208,7 +215,6 @@ def cmd_run(args: argparse.Namespace) -> int:
             model = live_model or mock_model(args.policy, world)
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             run_id = new_run_id(config, stamp, secrets.token_hex(2))
-            run_dir = new_run_dir(root, args.partition, run_id)
             manifest = build_manifest(
                 config,
                 world=world,
@@ -218,9 +224,11 @@ def cmd_run(args: argparse.Namespace) -> int:
             )
             manifest["control"] = args.control
             manifest["recorder_key_id"] = key_id
-            # Every later reader rebuilds the world from this manifest (R-INC-11).
+            # Every later reader rebuilds the world from this manifest (R-INC-11); checked
+            # before any run directory exists (runs/ is append-only).
             if world_from_manifest(manifest).sha256() != world.sha256():
                 raise RuntimeError("manifest does not reconstruct the episode's world")
+            run_dir = new_run_dir(root, args.partition, run_id)
             (run_dir / "manifest.json").write_text(
                 json.dumps(manifest, sort_keys=True, indent=1), encoding="utf-8"
             )
