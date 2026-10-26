@@ -6,6 +6,12 @@
     ethwall audit run --exports review/fixture-heldout --mode mock --out audit/heldout.jsonl
     ethwall audit report --predictions audit/heldout.jsonl --references fixtures:heldout \
                          --exports review/fixture-heldout --out analysis/audit-heldout
+    ethwall audit final --out analysis/audit-final [--live review/main=audit/main.jsonl]
+    ethwall reference run --exports review/fixture-dev --partition fixture-dev \
+                          [--mode live --confirm-spend]
+    ethwall reference freeze
+    ethwall reference validate --exports review/fixture-dev --exports review/fixture-heldout
+    ethwall reference facts --exports review/main --runs-root runs
 
 Exports are written to `<out>.staging/<trajectory id>/<view>.json` with opaque ids and promoted
 (renamed) to `<out>` only after the leak check: never with blocking hits; with review hits
@@ -40,7 +46,6 @@ from ethwall.contract import (
     TextBlock,
     View,
 )
-from ethwall.recorder._manifest import default_repo_root
 
 VIEWS = tuple(v.value for v in View)
 POSITIVE = {
@@ -310,7 +315,8 @@ def audit_run(argv: list[str]) -> int:
     p.add_argument("--mode", choices=["mock", "live"], default="mock")
     p.add_argument("--out", required=True)
     p.add_argument("--confirm-spend", action="store_true")
-    p.add_argument("--spend-root", default=str(default_repo_root() / "spend"))
+    p.add_argument("--spend-root", default=default_spend_root())
+    p.add_argument("--allow-empty-spend-root", action="store_true")
     a = p.parse_args(argv)
     ledger = None
     if a.mode == "live":
@@ -325,9 +331,17 @@ def audit_run(argv: list[str]) -> int:
         if missing:
             raise UsageError(f"live auditor needs these settings: {', '.join(missing)}")
         from ethwall.audit import auditor_from_env
+        from ethwall.spend import PricingError, pricing_for_model
 
+        try:
+            load_pricing()
+            # R-REF-09: the auditor is charged at its own model's table rate.
+            pricing = pricing_for_model(os.environ["AUDITOR_MODEL_ID"].strip())
+        except PricingError as exc:
+            raise UsageError(str(exc)) from exc
+        _check_spend_root(Path(a.spend_root), a.allow_empty_spend_root)
         model = auditor_from_env()
-        ledger = auditor_ledger(load_pricing(), a.spend_root)
+        ledger = auditor_ledger(pricing, a.spend_root)
     else:
         model = MockAuditor()
     prompt, _ = load_auditor_prompt()
@@ -444,14 +458,371 @@ def _visible_ids(exports: Path) -> dict[tuple[str, str], frozenset[str]]:
 
 
 def cmd_audit(argv: list[str]) -> int:
-    if not argv or argv[0] not in ("run", "report"):
-        print("usage: ethwall audit run|report ...")
+    commands = {"run": audit_run, "report": audit_report, "final": audit_final}
+    if not argv or argv[0] not in commands:
+        print("usage: ethwall audit run|report|final ...")
         return 2
-    return audit_run(argv[1:]) if argv[0] == "run" else audit_report(argv[1:])
+    return commands[argv[0]](argv[1:])
+
+
+def audit_final(argv: list[str]) -> int:
+    """`ethwall audit final`: read-only final audit report (R-REF-10); see audit.final."""
+    from ethwall.audit.final import cmd_final
+
+    return cmd_final(argv)
+
+
+# ----------------------------------------------------------------------------- reference
+
+
+def default_spend_root() -> str:
+    """The shared spend-root default (`ethwall.spend.default_spend_root`)."""
+    from ethwall.spend import default_spend_root as shared
+
+    return shared()
+
+
+def _check_spend_root(root: Path, allow_empty: bool) -> None:
+    """Refuse a live run on a spend root that holds no ledger at all (R-REF-09).
+
+    Caps are enforced only across ledgers under one root: a run from a fresh worktree would
+    see $0 spent and could overshoot the batch and total caps. Point `--spend-root` (or
+    ETHWALL_SPEND_ROOT) at the root holding the earlier paid ledgers, or pass
+    `--allow-empty-spend-root` for the very first paid call.
+    """
+    from ethwall.cli import UsageError
+
+    if allow_empty or any(root.glob("*/_spend.json")):
+        return
+    raise UsageError(
+        f"spend root {root.resolve()} holds no ledger: point --spend-root or "
+        "ETHWALL_SPEND_ROOT at the root with the earlier paid ledgers "
+        "(or pass --allow-empty-spend-root for the first paid call ever)"
+    )
+
+
+def _id_map(exports: Path, private_dir: str | None) -> dict[str, str]:
+    """The private {trajectory id: fixture id or run name} map for an export dir."""
+    from ethwall.cli import UsageError
+
+    private = (
+        Path(private_dir)
+        if private_dir
+        else exports.with_name(exports.name + ".private")
+    )
+    path = private / "id_map.json"
+    if not path.is_file():
+        raise UsageError(f"no {path}: pass --private-dir for {exports}")
+    return dict(json.loads(path.read_text(encoding="utf-8"))["items"])
+
+
+def _item_dirs(root: Path) -> list[Path]:
+    from ethwall.cli import UsageError
+
+    if not root.is_dir():
+        raise UsageError(f"no export dir {root}")
+    return sorted(
+        x for x in root.iterdir() if x.is_dir() and not x.name.startswith("_")
+    )
+
+
+def reference_run(argv: list[str]) -> int:
+    """Adjudicate every `combined.json` under --exports (R-REF-03/04/05/11).
+
+    Reads nothing but `<exports>/<trajectory id>/combined.json` (plus the prompt, the freeze
+    record and its own output file): never predictions, the construction manifest, other labels
+    or the private id map. Live mode checks every setting, the model's recorded price and (off
+    `fixture-dev`) the freeze before any call.
+    """
+    from ethwall.audit import reference as ref
+    from ethwall.cli import UsageError
+    from ethwall.contract import sha256_hex
+
+    p = argparse.ArgumentParser(prog="ethwall reference run")
+    p.add_argument("--exports", required=True)
+    p.add_argument(
+        "--partition",
+        default=None,
+        help="must equal the export dir name (the default); never a free label",
+    )
+    p.add_argument("--mode", choices=["mock", "live"], default="mock")
+    p.add_argument("--confirm-spend", action="store_true")
+    p.add_argument("--labels-dir", default="labels")
+    p.add_argument(
+        "--out", default=None, help="default <labels-dir>/adjudicator-<partition>.jsonl"
+    )
+    p.add_argument("--spend-root", default=default_spend_root())
+    p.add_argument(
+        "--allow-empty-spend-root",
+        action="store_true",
+        help="live: allow a spend root that holds no ledger yet (first paid call ever)",
+    )
+    p.add_argument("--freeze-path", default=str(ref.ADJUDICATOR_FREEZE_PATH))
+    p.add_argument(
+        "--rerun",
+        action="store_true",
+        help="re-run items that already have a record (mock, or live on fixture-dev "
+        "before the freeze)",
+    )
+    a = p.parse_args(argv)
+    exports = Path(a.exports)
+    partition = exports.resolve().name
+    if a.partition is not None and a.partition != partition:
+        raise UsageError(
+            f"--partition {a.partition!r} differs from the export dir {partition!r}; "
+            "the partition is the export dir name"
+        )
+    try:
+        out = (
+            Path(a.out)
+            if a.out
+            else ref.adjudicator_records_path(a.labels_dir, partition)
+        )
+    except ValueError as exc:
+        raise UsageError(str(exc)) from exc
+    items = _item_dirs(exports)
+    prompt, prompt_sha = ref.load_adjudicator_prompt()
+    ledger = None
+    freeze_id = None
+    if a.mode == "live":
+        from ethwall.spend import PricingError, pricing_for_model
+
+        if not a.confirm_spend:
+            raise UsageError("live adjudicator calls spend money: pass --confirm-spend")
+        need = (ref.ADJUDICATOR_MODEL_ENV, "ANTHROPIC_API_KEY")
+        missing = [k for k in need if not os.environ.get(k, "").strip()]
+        if missing:
+            raise UsageError(
+                f"live adjudicator needs these settings: {', '.join(missing)}"
+            )
+        model_id = os.environ[ref.ADJUDICATOR_MODEL_ENV].strip()
+        try:
+            pricing_for_model(model_id)
+        except PricingError as exc:
+            raise UsageError(str(exc)) from exc
+        if partition == ref.DEV_PARTITION:
+            if ref.load_freeze(a.freeze_path) is not None:
+                raise UsageError(
+                    "the adjudicator is frozen: development records are closed "
+                    f"({a.freeze_path})"
+                )
+        else:
+            if a.rerun:
+                raise UsageError(
+                    "--rerun is refused for live held-out/live items: the first record "
+                    "under the freeze is the reference"
+                )
+            try:
+                rec = ref.check_freeze(
+                    a.freeze_path, prompt_sha=prompt_sha, model_id=model_id
+                )
+            except ref.FreezeError as exc:
+                raise UsageError(str(exc)) from exc
+            freeze_id = str(rec.get("freeze_id"))
+        _check_spend_root(Path(a.spend_root), a.allow_empty_spend_root)
+        model: Any = ref.adjudicator_from_env()
+        ledger = ref.adjudicator_ledger(model_id, a.spend_root)
+        print(
+            f"spend root {Path(a.spend_root).resolve()}: auditor batch "
+            f"${ledger.batch_spent_usd:.4f} of ${ledger.batch_cap_usd('auditor'):.2f}, "
+            f"total ${ledger.total_spent_usd:.4f}"
+        )
+    else:
+        model = ref.MockAdjudicator()
+    # Any earlier answer (ok, invalid or transport error) under the same mode, prompt and
+    # model counts as done: an invalid answer is never re-sampled until one parses. Only a
+    # spend refusal (no call made) is retried.
+    done = {
+        str(r["item_id"])
+        for r in ref.read_records(out)
+        if r.get("status") != "spend_refused"
+        and r.get("mode") == a.mode
+        and r.get("prompt_sha256") == prompt_sha
+        and r.get("requested_model_id") == str(getattr(model, "model_id", ""))
+    }
+    counts: dict[str, int] = {}
+    skipped = 0
+    for d in items:
+        if d.name in done and not a.rerun:
+            skipped += 1
+            continue
+        raw = (d / "combined.json").read_bytes()
+        record = ref.run_adjudicator(
+            json.loads(raw.decode("utf-8")),
+            model=model,
+            prompt_text=prompt,
+            ledger=ledger,
+            partition=partition,
+            export_sha256=sha256_hex(raw),
+            freeze_id=freeze_id,
+        )
+        ref.append_reference(out, record)
+        counts[record.status] = counts.get(record.status, 0) + 1
+    summary = ", ".join(f"{k} {v}" for k, v in sorted(counts.items())) or "none run"
+    print(
+        f"adjudicator ({a.mode}) {summary}; {skipped} skipped (already answered) -> {out}"
+    )
+    return 0
+
+
+def reference_freeze(argv: list[str]) -> int:
+    """Freeze the adjudicator prompt + model after the development fixtures (R-REF-05)."""
+    from ethwall.audit import reference as ref
+    from ethwall.cli import UsageError
+
+    p = argparse.ArgumentParser(prog="ethwall reference freeze")
+    p.add_argument("--labels-dir", default="labels")
+    p.add_argument("--dev-records", default=None)
+    p.add_argument("--freeze-path", default=str(ref.ADJUDICATOR_FREEZE_PATH))
+    a = p.parse_args(argv)
+    model_id = os.environ.get(ref.ADJUDICATOR_MODEL_ENV, "").strip()
+    if not model_id:
+        raise UsageError(f"{ref.ADJUDICATOR_MODEL_ENV} is required to freeze")
+    dev = (
+        Path(a.dev_records)
+        if a.dev_records
+        else ref.adjudicator_records_path(a.labels_dir, ref.DEV_PARTITION)
+    )
+    try:
+        rec = ref.write_freeze(a.freeze_path, model_id=model_id, dev_records_path=dev)
+    except ref.FreezeError as exc:
+        raise UsageError(str(exc)) from exc
+    print(json.dumps(rec, indent=1, sort_keys=True))
+    return 0
+
+
+def reference_validate(argv: list[str]) -> int:
+    """Adjudicator vs construction labels per fixture partition (R-REF-08)."""
+    from ethwall.audit import reference as ref
+    from ethwall.cli import UsageError
+    from ethwall.contract import sha256_hex
+
+    p = argparse.ArgumentParser(prog="ethwall reference validate")
+    p.add_argument("--exports", action="append", required=True)
+    p.add_argument(
+        "--private-dir",
+        action="append",
+        default=None,
+        help="one per --exports, in order (default <exports>.private)",
+    )
+    p.add_argument("--labels-dir", default="labels")
+    p.add_argument("--out", default="analysis/adjudicator-validation")
+    a = p.parse_args(argv)
+    privates = a.private_dir or [None] * len(a.exports)
+    if len(privates) != len(a.exports):
+        raise UsageError("give one --private-dir per --exports, or none")
+    results: dict[str, Any] = {}
+    inputs: dict[str, Any] = {}
+    for exports, private in zip(a.exports, privates):
+        root = Path(exports)
+        partition = root.name
+        if partition not in ("fixture-dev", "fixture-heldout"):
+            raise UsageError(
+                f"{root}: validation runs on fixture-dev / fixture-heldout exports"
+            )
+        by_fid = {fid: tid for tid, fid in _id_map(root, private).items()}
+        construction = ref.reference_categories(
+            ref.references(f"construction:{partition.split('-', 1)[1]}", id_map=by_fid)
+        )
+        path = ref.adjudicator_records_path(a.labels_dir, partition)
+        results[partition] = ref.validate_adjudicator(
+            ref.read_records(path), construction
+        )
+        inputs[partition] = {
+            "adjudicator_records": path.as_posix(),
+            "sha256": sha256_hex(path.read_bytes()) if path.is_file() else None,
+            **ref.adjudicator_summary(path),
+        }
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    mock = any("mock" in v["modes"] for v in results.values())
+    payload = {
+        "stamp": "MOCK" if mock else "",
+        "reference": "construction (designed, not validated ground truth)",
+        "note": "fixture-dev is in-sample (the adjudicator prompt was developed on it); "
+        "fixture-heldout is the out-of-sample check",
+        "inputs": inputs,
+        "results": results,
+    }
+    (out / "validation.json").write_text(
+        json.dumps(payload, indent=1, sort_keys=True), encoding="utf-8"
+    )
+    table = ("[MOCK]\n\n" if mock else "") + ref.validation_table(results)
+    (out / "validation.md").write_text(table, encoding="utf-8")
+    print(table, end="")
+    print(f"-> {out}")
+    return 0
+
+
+def reference_facts(argv: list[str]) -> int:
+    """Automated factual checks for every live trajectory of an export (R-REF-06).
+
+    Keyed by trajectory id only (run directory names reveal the condition, so they stay in
+    the private map).
+    """
+    from ethwall.audit import reference as ref
+    from ethwall.cli import UsageError
+    from ethwall.contract import canonical_json, sha256_hex
+
+    p = argparse.ArgumentParser(prog="ethwall reference facts")
+    p.add_argument("--exports", required=True)
+    p.add_argument("--private-dir", default=None)
+    p.add_argument("--runs-root", default="runs")
+    p.add_argument("--labels-dir", default="labels")
+    p.add_argument(
+        "--out", default=None, help="default <labels-dir>/factual-<name>.jsonl"
+    )
+    a = p.parse_args(argv)
+    root = Path(a.exports)
+    name = root.name
+    out = Path(a.out) if a.out else Path(a.labels_dir) / f"factual-{name}.jsonl"
+    if out.exists():
+        raise UsageError(f"{out} exists; factual checks are written once")
+    rows = []
+    for tid, run_name in sorted(_id_map(root, a.private_dir).items()):
+        try:
+            run_dir = ref.find_run_dir(a.runs_root, run_name)
+            events = ref.read_run_events(run_dir)
+            world = ref.world_for_events(events)
+        except (FileNotFoundError, TypeError) as exc:
+            raise UsageError(str(exc)) from exc
+        checks = ref.factual_checks(events, world)
+        rows.append(
+            {
+                "item_id": tid,
+                "partition": name,
+                "reference_kind": "factual_checks",
+                "events_sha256": sha256_hex((run_dir / "events.jsonl").read_bytes()),
+                "checked_utc": ref.utc_now(),
+                **checks,
+            }
+        )
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("x", encoding="utf-8") as fh:
+        for r in rows:
+            fh.write(canonical_json(r) + "\n")
+    print(f"factual checks for {len(rows)} trajectories -> {out}")
+    return 0
+
+
+def cmd_reference(argv: list[str]) -> int:
+    commands = {
+        "run": reference_run,
+        "freeze": reference_freeze,
+        "validate": reference_validate,
+        "facts": reference_facts,
+    }
+    if not argv or argv[0] not in commands:
+        print("usage: ethwall reference run|freeze|validate|facts ...")
+        return 2
+    return commands[argv[0]](argv[1:])
 
 
 def dispatch(args: argparse.Namespace) -> int:
     rest = [x for x in args.rest if x != "--"]
-    return {"export-review": cmd_export_review, "label": cmd_label, "audit": cmd_audit}[
-        args.command
-    ](rest)
+    return {
+        "export-review": cmd_export_review,
+        "label": cmd_label,
+        "audit": cmd_audit,
+        "reference": cmd_reference,
+    }[args.command](rest)

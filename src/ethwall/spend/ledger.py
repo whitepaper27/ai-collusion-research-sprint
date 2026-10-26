@@ -3,6 +3,10 @@
 - The pricing basis (USD per million input/output tokens, where it was read, when) comes from
   the documented `ETHWALL_PRICE_*` settings (`.env.example`); `load_pricing()` refuses to return
   without all four. Live mode refuses to start without a ledger (see `ethwall.runtime`).
+- Mixed models (docs/specs/references.md R-REF-09): `protocol/pricing.json` records per-model
+  rates; `pricing_for_model` / `SpendLedger.for_model` price a ledger by its configured model id
+  and refuse a model with no recorded price. Ledgers priced differently still share the root
+  lock and the batch and total caps, since caps are summed in micro-dollars across files.
 - Before each call the runtime reserves `input_token_estimate x input price + max_tokens x
   output price`, rounded up to the next micro-dollar. A reservation that does not fit the
   episode cap, the batch cap or the $50 total is refused and the call is not made.
@@ -53,6 +57,7 @@ PRICE_ENV_KEYS = (
     "ETHWALL_PRICE_DATE",
 )
 LOCK_NAME = ".spend.lock"
+SPEND_ROOT_ENV = "ETHWALL_SPEND_ROOT"
 LOCK_TIMEOUT_S = 30.0
 _PARTITION_BATCH = {
     "main": "main",
@@ -75,6 +80,9 @@ class Pricing:
     output_per_mtok: float
     source: str
     date: str
+    model: str | None = (
+        None  # set when priced per model from the pricing table (R-REF-09)
+    )
 
     def cost_micro(self, input_tokens: int, output_tokens: int) -> int:
         """Exact cost in micro-dollars, rounded up. USD per Mtok == micro-USD per token."""
@@ -111,6 +119,102 @@ def load_pricing(env: Mapping[str, str] | None = None) -> Pricing:
         env[PRICE_ENV_KEYS[2]].strip(),
         env[PRICE_ENV_KEYS[3]].strip(),
     )
+
+
+# ---------------------------------------------------------------------------- per-model table
+
+PRICING_TABLE_PATH = Path(__file__).resolve().parents[3] / "protocol" / "pricing.json"
+
+
+def _table_price(model: str, entry: Any, key: str) -> float:
+    value = entry.get(key) if isinstance(entry, Mapping) else None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise PricingError(f"pricing table: {model}.{key} must be a number")
+    if not math.isfinite(value) or value <= 0:
+        raise PricingError(f"pricing table: {model}.{key} must be positive and finite")
+    return float(value)
+
+
+def load_pricing_table(path: str | Path | None = None) -> dict[str, Any]:
+    """The committed per-model pricing table (docs/specs/references.md R-REF-09).
+
+    `{"basis_source", "basis_date", "models": {model id: {"input_per_mtok",
+    "output_per_mtok"}}}`. Raises PricingError when anything is missing or not positive, so a
+    half-valid table is never used.
+    """
+    target = Path(path) if path is not None else PRICING_TABLE_PATH
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise PricingError(f"pricing table {target} unreadable: {exc}") from exc
+    if not isinstance(data, Mapping):
+        raise PricingError("pricing table must be a JSON object")
+    for key in ("basis_source", "basis_date"):
+        if not isinstance(data.get(key), str) or not data[key].strip():
+            raise PricingError(f"pricing table: {key} is required")
+    models = data.get("models")
+    if not isinstance(models, Mapping) or not models:
+        raise PricingError("pricing table: models must be a non-empty object")
+    for model, entry in models.items():
+        for key in ("input_per_mtok", "output_per_mtok"):
+            _table_price(str(model), entry, key)
+    return dict(data)
+
+
+def pricing_for_model(
+    model_id: str,
+    *,
+    table: Mapping[str, Any] | None = None,
+    path: str | Path | None = None,
+    env: Mapping[str, str] | None = None,
+) -> Pricing:
+    """The Pricing for one configured model id from the table (R-REF-09).
+
+    Exact match on the configured id (reservations happen before any response, so a served id
+    with a date suffix is never the lookup key). A model with no recorded price is refused. The
+    env basis (`ETHWALL_PRICE_*`) describes the actor model (`ACTOR_MODEL_ID`); when it is fully
+    set for this same model it must agree with the table, else PricingError.
+    """
+    data = dict(table) if table is not None else load_pricing_table(path)
+    mid = (model_id or "").strip()
+    entry = (data.get("models") or {}).get(mid)
+    if not mid or entry is None:
+        raise PricingError(
+            f"no recorded price for model {mid!r} in the pricing table "
+            "(protocol/pricing.json); refusing paid calls"
+        )
+    pricing = Pricing(
+        _table_price(mid, entry, "input_per_mtok"),
+        _table_price(mid, entry, "output_per_mtok"),
+        str(data["basis_source"]).strip(),
+        str(data["basis_date"]).strip(),
+        model=mid,
+    )
+    env = os.environ if env is None else env
+    if env.get("ACTOR_MODEL_ID", "").strip() == mid and all(
+        env.get(k, "").strip() for k in PRICE_ENV_KEYS
+    ):
+        basis = load_pricing(env)
+        if (basis.input_per_mtok, basis.output_per_mtok) != (
+            pricing.input_per_mtok,
+            pricing.output_per_mtok,
+        ):
+            raise PricingError(
+                f"env pricing basis for {mid!r} conflicts with the pricing table; "
+                "fix one of them before paid calls"
+            )
+    return pricing
+
+
+def default_spend_root(env: Mapping[str, str] | None = None) -> str:
+    """The spend root every paid command defaults to (actor, auditor, adjudicator).
+
+    `ETHWALL_SPEND_ROOT` when set, else `<checkout>/spend`. One shared default, so the caps
+    (summed across the ledgers under one root) can never be split between commands.
+    """
+    env = os.environ if env is None else env
+    root = env.get(SPEND_ROOT_ENV, "").strip()
+    return root or str(Path(__file__).resolve().parents[3] / "spend")
 
 
 def batch_for_partition(partition: str) -> str:
@@ -263,6 +367,24 @@ class SpendLedger:
         batch = batch_for_partition(partition)
         cap = EPISODE_CAP_USD[partition.split("-")[0]]
         return cls(Path(root) / partition / "_spend.json", batch, cap, pricing)
+
+    @classmethod
+    def for_model(
+        cls,
+        model_id: str,
+        path: str | Path,
+        batch: str,
+        episode_cap_usd: float,
+        *,
+        table: Mapping[str, Any] | None = None,
+        env: Mapping[str, str] | None = None,
+    ) -> SpendLedger:
+        """Ledger at `path` that prices every call at `model_id`'s table rate (R-REF-09).
+
+        Caps are shared with every other ledger under the same root (`path.parent.parent`).
+        """
+        pricing = pricing_for_model(model_id, table=table, env=env)
+        return cls(path, batch, episode_cap_usd, pricing)
 
     @staticmethod
     def batch_cap_usd(batch: str) -> float:

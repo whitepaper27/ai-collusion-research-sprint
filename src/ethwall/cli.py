@@ -7,6 +7,7 @@
     ethwall freeze create|validate --id <freeze_id>
     ethwall doctor
     ethwall export-review | label | audit   (audit study; see `ethwall <cmd> -h`)
+    ethwall reference run|freeze|validate|facts   (reference labels; docs/specs/references.md)
 
 Live (paid) runs need `--confirm-spend`, ACTOR_MODEL_ID, ANTHROPIC_API_KEY,
 ETHWALL_RECORDER_KEY and the ETHWALL_PRICE_* pricing basis; main partitions also need a valid
@@ -38,6 +39,7 @@ from ethwall.contract import (
     to_jsonable,
 )
 from ethwall.recorder._manifest import default_repo_root
+from ethwall.spend import default_spend_root
 
 REPO_ROOT = default_repo_root()
 
@@ -48,7 +50,7 @@ PRICE_ENV = (
     "ETHWALL_PRICE_SOURCE",
     "ETHWALL_PRICE_DATE",
 )
-DOCTOR_ENV = (*LIVE_ENV, "AUDITOR_MODEL_ID", *PRICE_ENV)
+DOCTOR_ENV = (*LIVE_ENV, "AUDITOR_MODEL_ID", "ADJUDICATOR_MODEL_ID", *PRICE_ENV)
 
 
 class UsageError(Exception):
@@ -376,7 +378,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--confirm-spend", action="store_true", help="owner's go for paid calls"
     )
     r.add_argument("--runs-root", default=str(REPO_ROOT / "runs"))
-    r.add_argument("--spend-root", default=str(REPO_ROOT / "spend"))
+    r.add_argument("--spend-root", default=default_spend_root())
     r.set_defaults(func=cmd_run)
 
     v = sub.add_parser("verify", help="verify recorded runs")
@@ -409,11 +411,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 AUDIT_COMMANDS = ("export-review", "label", "audit")
+# Reference labels (docs/specs/references.md R-REF-11): parsed by ethwall.audit_cli and routed
+# before the top-level parser. Not yet in build_parser: test_all_commands_are_wired (R-CLI-03,
+# review tier) pins the exact subcommand set; adding "reference" to both needs owner review.
+REFERENCE_COMMANDS = ("reference",)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    if argv and argv[0] in AUDIT_COMMANDS:
+    if argv and argv[0] in (*AUDIT_COMMANDS, *REFERENCE_COMMANDS):
         # These parse their own options (see ethwall.audit_cli).
         args = argparse.Namespace(command=argv[0], rest=argv[1:], func=cmd_audit_family)
     else:
