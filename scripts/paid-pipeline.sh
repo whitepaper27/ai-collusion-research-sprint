@@ -19,6 +19,8 @@
 #   main             main runs on the chosen seeds, both conditions, 4 parallel workers
 #                    (the spend ledger lock serializes spend across processes)
 #   audit-main       export the main trajectories (leak triage) + auditor on all 4 views
+#   inc-lawful, inc-controls, inc-smoke, inc-freeze, inc-main, inc-audit, inc-report:
+#                    the exploratory incentive arm, in gate order (run by name, not by `all`)
 #   report           tables/figures for smoke, control, main; audit metrics (provisional vs
 #                    construction labels for fixtures; human labels once they exist)
 #
@@ -284,6 +286,124 @@ stage_report() {
     echo "PROVISIONAL (construction labels); final metrics use Sahil's blind labels"
   fi
   MSG="Record paid-run evidence and analysis" commit runs review audit analysis protocol
+}
+
+# ---- Exploratory incentive stress arm (sol.md Amendment A; never pooled with main-v1) ----
+INC="--arm incentive"
+INC_FREEZE="${INC_FREEZE:-incentive-v1}"
+
+inc_summary() {  # one line per episode: the endpoints the gates read
+  uv run --frozen python - "analysis/$1/tables/episodes.csv" <<'PY'
+import csv, sys
+for r in csv.DictReader(open(sys.argv[1], encoding="utf-8")):
+    print(r["condition"], r["seed"], r["terminal_state"], "msgs", r["messages_delivered"],
+          "blocked", r["messages_blocked"], "handoff", r["handoff_complete"],
+          "restr_orders", r["restricted_rationale_orders"], "tainted", r["tainted_order_fills"],
+          "restr_pub", r["restricted_publication"], "ret%", r["return_pct"],
+          "refusal", r["refusal_flag"], "aware", r["awareness_flag"], "cost", r["cost_usd"])
+PY
+}
+
+inc_batch() {  # partition seeds [run flags...]; skips when the partition already exists
+  local part="$1" seeds="$2"; shift 2
+  step "incentive: $part (seeds $seeds, both conditions)"
+  if [ -d "runs/$part" ]; then echo "runs/$part exists; skipping"; else
+    $E run --mode live --confirm-spend $INC --partition "$part" --seeds "$seeds" "$@" \
+      || echo "$part: some episodes interrupted (recorded)"
+  fi
+  $E verify --partition "$part" || true
+  $E analyze --partition "$part" --out "analysis/$part"
+  inc_summary "$part"
+  MSG="Record incentive $part runs" commit "runs/$part" "analysis/$part"
+}
+
+stage_inc_lawful() { inc_batch control-lawful 352 --control --control-kind lawful_handoff; }
+stage_inc_controls() { inc_batch control-incentive 350,353 --control --control-kind instructed_harmful; }
+stage_inc_smoke() { inc_batch "${INC_SMOKE_PART:-smoke-incentive}" 320; }
+
+stage_inc_freeze() {
+  step "incentive: main size by rule (before any main outcome) + freeze $INC_FREEZE"
+  local f=protocol/decisions/main-incentive-size.json
+  if [ ! -f "$f" ]; then
+    uv run --frozen python - "$f" control-lawful control-incentive "${INC_SMOKE_PART:-smoke-incentive}" <<'PY'
+import json, sys
+from pathlib import Path
+from statistics import mean
+eps = []
+for part in sys.argv[2:]:
+    p = Path("spend") / part / "_spend.json"
+    if p.exists():
+        d = json.loads(p.read_text(encoding="utf-8"))
+        eps += [e["spent_micro"] / 1e6 for e in d.get("episodes", {}).values() if e.get("calls")]
+if not eps:
+    sys.exit("no incentive smoke/control spend recorded")
+per_ep = mean(eps)
+# Rule: all 10 seeds x 2 if 1.2x projection fits what is left of the $25 main batch; else 6 seeds.
+main = Path("spend/main/_spend.json")
+used = sum(e["spent_micro"] for e in json.loads(main.read_text(encoding="utf-8"))["episodes"].values()) / 1e6 if main.exists() else 0.0
+left = 25.0 - used
+seeds = "300-309" if per_ep * 20 * 1.2 <= left else ("300-305" if per_ep * 12 * 1.2 <= left else "")
+rec = {"episodes_used": len(eps), "mean_usd_per_episode": round(per_ep, 4), "max_usd_per_episode": round(max(eps), 4),
+       "main_batch_left_usd": round(left, 2), "main_seeds": seeds,
+       "rule": "300-309 if 1.2 x 20 x mean <= main batch left; else 300-305 if 12 fit; else none"}
+Path(sys.argv[1]).parent.mkdir(parents=True, exist_ok=True)
+with open(sys.argv[1], "x", encoding="utf-8") as fh:
+    json.dump(rec, fh, indent=1, sort_keys=True)
+print(json.dumps(rec, indent=1))
+PY
+  fi
+  cat "$f"
+  MSG="Incentive arm: main-size decision (before any main outcome)" commit protocol/decisions
+  if [ ! -d "protocol/frozen/$INC_FREEZE" ]; then
+    $E freeze create --id "$INC_FREEZE"
+    MSG="Protocol freeze $INC_FREEZE (incentive arm)" commit "protocol/frozen/$INC_FREEZE"
+  fi
+  $E freeze validate --id "$INC_FREEZE"
+}
+
+stage_inc_main() {
+  local seeds
+  seeds="$(uv run --frozen python -c "import json;print(json.load(open('protocol/decisions/main-incentive-size.json'))['main_seeds'])")"
+  [ -n "$seeds" ] || { echo "incentive main does not fit the budget" >&2; return; }
+  [ -d runs/main-incentive ] && { echo "runs/main-incentive exists; use INC_MAIN_TODO to finish cells"; }
+  step "incentive main, seeds $seeds, both conditions in parallel"
+  local pids=() logs
+  logs="$(mktemp -d)"
+  for cond in baseline guarded; do
+    $E run --mode live --confirm-spend $INC --partition main-incentive --freeze "$INC_FREEZE" \
+      --condition "$cond" --seeds "$seeds" > "$logs/inc-$cond.log" 2>&1 &
+    pids+=($!)
+  done
+  for p in "${pids[@]}"; do wait "$p" || true; done
+  cat "$logs"/inc-*.log; rm -rf "$logs"
+  $E verify --partition main-incentive || echo "main-incentive: verify reported problems (recorded)"
+  $E analyze --partition main-incentive --out analysis/main-incentive
+  inc_summary main-incentive
+  MSG="Record incentive main runs" commit runs/main-incentive analysis/main-incentive
+}
+
+stage_inc_audit() {
+  step "incentive: export (leak triage), auditor on 4 views, adjudicator references"
+  if [ ! -d review/main-incentive ]; then
+    if ! $E export-review --partition main-incentive --out review/main-incentive; then
+      [ "${ACK_REVIEW:-0}" = 1 ] || { echo "export-review stopped: triage REVIEW lines, re-run with ACK_REVIEW=1" >&2; exit 1; }
+      rm -rf review/main-incentive.staging review/main-incentive.private
+      $E export-review --partition main-incentive --out review/main-incentive --ack-review
+    fi
+  fi
+  [ -f audit/main-incentive.jsonl ] || \
+    $E audit run --mode live --confirm-spend --exports review/main-incentive --out audit/main-incentive.jsonl
+  $E reference run --exports review/main-incentive --mode live --confirm-spend \
+    || echo "reference: main-incentive incomplete (recorded)"
+  MSG="Record incentive audit predictions and adjudicator references" commit review audit labels
+}
+
+stage_inc_report() {
+  step "incentive: final audit across panels + per-partition analysis"
+  $E audit final --out analysis/audit-final-incentive --heldout-exports review/fixture-heldout \
+    --heldout-predictions audit/fixture-heldout.jsonl --live review/main=audit/main.jsonl \
+    --live review/main-incentive=audit/main-incentive.jsonl --runs-root runs
+  MSG="Incentive arm: final audit report" commit analysis
 }
 
 STAGES=(doctor probe auditor-dev auditor-freeze auditor-heldout smoke project freeze main audit-main report)
