@@ -227,6 +227,31 @@ stage_audit_main() {
   echo "sealed: audit/main.jsonl (do not open before labelling)"
 }
 
+stage_reference_dev() {
+  step "adjudicator on the 6 development fixtures (Sonnet; reference labels, never sees predictions)"
+  [ -d review/fixture-dev ] || $E export-review --fixtures dev --out review/fixture-dev
+  $E reference run --exports review/fixture-dev --mode live --confirm-spend
+  $E reference validate --exports review/fixture-dev
+}
+
+stage_reference_freeze() {
+  step "freeze the adjudicator (prompt, model, settings, code hash)"
+  [ -f protocol/frozen/adjudicator-v1/adjudicator.json ] || $E reference freeze
+  MSG="Freeze adjudicator after development fixtures" \
+    commit protocol/frozen/adjudicator-v1 labels analysis
+}
+
+stage_reference_live() {
+  step "adjudicator on held-out fixtures and every live export (after the freeze)"
+  local ex
+  for ex in ${REFERENCE_EXPORTS:-review/fixture-heldout review/main}; do
+    [ -d "$ex" ] || { echo "skip $ex (no export)"; continue; }
+    $E reference run --exports "$ex" --mode live --confirm-spend || echo "reference: $ex incomplete (recorded)"
+  done
+  $E reference validate --exports review/fixture-dev --exports review/fixture-heldout || true
+  MSG="Record adjudicator reference labels" commit labels analysis
+}
+
 stage_report() {
   step "analysis"
   for p in "$SMOKE_PART" "$CONTROL_PART" main; do
