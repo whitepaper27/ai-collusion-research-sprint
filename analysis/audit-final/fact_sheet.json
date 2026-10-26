@@ -1,0 +1,2335 @@
+{
+  "numbers": [
+    {
+      "name": "fixture-heldout.construction.n_reference_items",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.construction.n_uncertain_references",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.construction.actions.attempts",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.construction.actions.not_completed",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.actions.abstentions",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.actions.invalid",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.actions.coverage",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.construction.actions.accuracy_all_attempts",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.4
+    },
+    {
+      "name": "fixture-heldout.construction.actions.accuracy_valid_answers",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.4
+    },
+    {
+      "name": "fixture-heldout.construction.actions.coordination.tp",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.construction.actions.coordination.fp",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.actions.coordination.fn",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 4
+    },
+    {
+      "name": "fixture-heldout.construction.actions.coordination.tn",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 3
+    },
+    {
+      "name": "fixture-heldout.construction.actions.coordination.precision",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.6666666666666666
+    },
+    {
+      "name": "fixture-heldout.construction.actions.coordination.recall",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.3333333333333333
+    },
+    {
+      "name": "fixture-heldout.construction.combined.attempts",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.construction.combined.not_completed",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.combined.abstentions",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.combined.invalid",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.combined.coverage",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.construction.combined.accuracy_all_attempts",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.6
+    },
+    {
+      "name": "fixture-heldout.construction.combined.accuracy_valid_answers",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.6
+    },
+    {
+      "name": "fixture-heldout.construction.combined.coordination.tp",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.combined.coordination.fp",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.combined.coordination.fn",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.combined.coordination.tn",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 3
+    },
+    {
+      "name": "fixture-heldout.construction.combined.coordination.precision",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.8571428571428571
+    },
+    {
+      "name": "fixture-heldout.construction.combined.coordination.recall",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.construction.linked.attempts",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.construction.linked.not_completed",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.linked.abstentions",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.linked.invalid",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.linked.coverage",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.construction.linked.accuracy_all_attempts",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.7
+    },
+    {
+      "name": "fixture-heldout.construction.linked.accuracy_valid_answers",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.7
+    },
+    {
+      "name": "fixture-heldout.construction.linked.coordination.tp",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.linked.coordination.fp",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.linked.coordination.fn",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.linked.coordination.tn",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 3
+    },
+    {
+      "name": "fixture-heldout.construction.linked.coordination.precision",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.8571428571428571
+    },
+    {
+      "name": "fixture-heldout.construction.linked.coordination.recall",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.construction.messages.attempts",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.construction.messages.not_completed",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.messages.abstentions",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.construction.messages.invalid",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.messages.coverage",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.8333333333333334
+    },
+    {
+      "name": "fixture-heldout.construction.messages.accuracy_all_attempts",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.4
+    },
+    {
+      "name": "fixture-heldout.construction.messages.accuracy_valid_answers",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.5
+    },
+    {
+      "name": "fixture-heldout.construction.messages.coordination.tp",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.messages.coordination.fp",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.messages.coordination.fn",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.messages.coordination.tn",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.messages.coordination.precision",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.8571428571428571
+    },
+    {
+      "name": "fixture-heldout.construction.messages.coordination.recall",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.construction.messages.determinate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 10
+    },
+    {
+      "name": "fixture-heldout.construction.messages.errors",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.messages.false_accusations",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.messages.misses",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.messages.error_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.6
+    },
+    {
+      "name": "fixture-heldout.construction.messages.false_accusation_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.25
+    },
+    {
+      "name": "fixture-heldout.construction.messages.miss_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.messages.abstention_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.16666666666666666
+    },
+    {
+      "name": "fixture-heldout.construction.actions.determinate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 10
+    },
+    {
+      "name": "fixture-heldout.construction.actions.errors",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.actions.false_accusations",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.actions.misses",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 4
+    },
+    {
+      "name": "fixture-heldout.construction.actions.error_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.6
+    },
+    {
+      "name": "fixture-heldout.construction.actions.false_accusation_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.25
+    },
+    {
+      "name": "fixture-heldout.construction.actions.miss_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.6666666666666666
+    },
+    {
+      "name": "fixture-heldout.construction.actions.abstention_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.combined.determinate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 10
+    },
+    {
+      "name": "fixture-heldout.construction.combined.errors",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 4
+    },
+    {
+      "name": "fixture-heldout.construction.combined.false_accusations",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.combined.misses",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.combined.error_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.4
+    },
+    {
+      "name": "fixture-heldout.construction.combined.false_accusation_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.25
+    },
+    {
+      "name": "fixture-heldout.construction.combined.miss_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.combined.abstention_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.linked.determinate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 10
+    },
+    {
+      "name": "fixture-heldout.construction.linked.errors",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 3
+    },
+    {
+      "name": "fixture-heldout.construction.linked.false_accusations",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.linked.misses",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.linked.error_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.3
+    },
+    {
+      "name": "fixture-heldout.construction.linked.false_accusation_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.25
+    },
+    {
+      "name": "fixture-heldout.construction.linked.miss_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.linked.abstention_rate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.error_rate.estimate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": -0.1
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.error_rate.lo",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": -0.3
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.error_rate.hi",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.error_rate.n_clusters",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.error_rate.n_valid",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 2000
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.false_accusation_rate.estimate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.false_accusation_rate.lo",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.false_accusation_rate.hi",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.false_accusation_rate.n_clusters",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.false_accusation_rate.n_valid",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1970
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.miss_rate.estimate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.miss_rate.lo",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.miss_rate.hi",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.miss_rate.n_clusters",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.miss_rate.n_valid",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 2000
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.abstention_rate.estimate",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.abstention_rate.lo",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.abstention_rate.hi",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.abstention_rate.n_clusters",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.h1.linked_minus_combined.abstention_rate.n_valid",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 2000
+    },
+    {
+      "name": "fixture-heldout.construction.h1.paired.pairs",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 10
+    },
+    {
+      "name": "fixture-heldout.construction.h1.paired.only_a_correct",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.construction.h1.paired.only_b_correct",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.construction.h1.paired.both_correct",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.construction.h1.paired.neither_correct",
+      "reference": "construction",
+      "sha256": "34aac3c1a33c6d0d44496e93167a6ef25def630fb5c44786aba630ec9f89744c",
+      "source": "fixture-heldout__construction.json",
+      "value": 3
+    },
+    {
+      "name": "fixture-heldout.adjudicator.n_reference_items",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.n_uncertain_references",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.attempts",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.not_completed",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.abstentions",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.invalid",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.coverage",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.accuracy_all_attempts",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.4166666666666667
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.accuracy_valid_answers",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.4166666666666667
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.coordination.tp",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.coordination.fp",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.coordination.fn",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 5
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.coordination.tn",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 4
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.coordination.precision",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.6666666666666666
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.coordination.recall",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.2857142857142857
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.attempts",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.not_completed",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.abstentions",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.invalid",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.coverage",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.accuracy_all_attempts",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.5
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.accuracy_valid_answers",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.5
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.coordination.tp",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 7
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.coordination.fp",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.coordination.fn",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.coordination.tn",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 3
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.coordination.precision",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.7777777777777778
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.coordination.recall",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.attempts",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.not_completed",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.abstentions",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.invalid",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.coverage",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.accuracy_all_attempts",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.5833333333333334
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.accuracy_valid_answers",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.5833333333333334
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.coordination.tp",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 7
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.coordination.fp",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.coordination.fn",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.coordination.tn",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 3
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.coordination.precision",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.7777777777777778
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.coordination.recall",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.attempts",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.not_completed",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.abstentions",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.invalid",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.coverage",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.8333333333333334
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.accuracy_all_attempts",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.5
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.accuracy_valid_answers",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.6
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.coordination.tp",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 7
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.coordination.fp",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.coordination.fn",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.coordination.tn",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.coordination.precision",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.875
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.coordination.recall",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.determinate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.errors",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.false_accusations",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.misses",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.error_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.5
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.false_accusation_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.2
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.miss_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.messages.abstention_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.16666666666666666
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.determinate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.errors",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 7
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.false_accusations",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.misses",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 5
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.error_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.5833333333333334
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.false_accusation_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.2
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.miss_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.7142857142857143
+    },
+    {
+      "name": "fixture-heldout.adjudicator.actions.abstention_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.determinate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.errors",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.false_accusations",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.misses",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.error_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.5
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.false_accusation_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.4
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.miss_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.combined.abstention_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.determinate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.errors",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 5
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.false_accusations",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.misses",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.error_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.4166666666666667
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.false_accusation_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.4
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.miss_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.linked.abstention_rate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.error_rate.estimate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": -0.08333333333333333
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.error_rate.lo",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": -0.25
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.error_rate.hi",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.error_rate.n_clusters",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.error_rate.n_valid",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2000
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.false_accusation_rate.estimate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.false_accusation_rate.lo",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.false_accusation_rate.hi",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.false_accusation_rate.n_clusters",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.false_accusation_rate.n_valid",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1996
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.miss_rate.estimate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.miss_rate.lo",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.miss_rate.hi",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.miss_rate.n_clusters",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.miss_rate.n_valid",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2000
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.abstention_rate.estimate",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.abstention_rate.lo",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.abstention_rate.hi",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.abstention_rate.n_clusters",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.linked_minus_combined.abstention_rate.n_valid",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 2000
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.paired.pairs",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 12
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.paired.only_a_correct",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 1
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.paired.only_b_correct",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.paired.both_correct",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 6
+    },
+    {
+      "name": "fixture-heldout.adjudicator.h1.paired.neither_correct",
+      "reference": "adjudicator",
+      "sha256": "c67fc0c8a0aa0b3d74a24b16d7605b1f0ed1d718ae79c9f3337fcd18b7e7d16a",
+      "source": "fixture-heldout__adjudicator.json",
+      "value": 5
+    },
+    {
+      "name": "main.adjudicator.n_reference_items",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.n_uncertain_references",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.attempts",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.actions.not_completed",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.abstentions",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.invalid",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.coverage",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.actions.accuracy_all_attempts",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.actions.accuracy_valid_answers",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.actions.coordination.tp",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.coordination.fp",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.coordination.fn",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.coordination.tn",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.actions.coordination.precision",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.actions.coordination.recall",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.combined.attempts",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.combined.not_completed",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.combined.abstentions",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.combined.invalid",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.combined.coverage",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.combined.accuracy_all_attempts",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.combined.accuracy_valid_answers",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.combined.coordination.tp",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.combined.coordination.fp",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.combined.coordination.fn",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.combined.coordination.tn",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.combined.coordination.precision",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.combined.coordination.recall",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.linked.attempts",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.linked.not_completed",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.linked.abstentions",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.linked.invalid",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.linked.coverage",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.linked.accuracy_all_attempts",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.linked.accuracy_valid_answers",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.linked.coordination.tp",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.linked.coordination.fp",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.linked.coordination.fn",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.linked.coordination.tn",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.linked.coordination.precision",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.linked.coordination.recall",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.messages.attempts",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.messages.not_completed",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.messages.abstentions",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.messages.invalid",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.messages.coverage",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.messages.accuracy_all_attempts",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.messages.accuracy_valid_answers",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.messages.coordination.tp",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.messages.coordination.fp",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.messages.coordination.fn",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.messages.coordination.tn",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.messages.coordination.precision",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.messages.coordination.recall",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.messages.determinate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.messages.errors",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.messages.false_accusations",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.messages.misses",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.messages.error_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.messages.false_accusation_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.messages.miss_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.messages.abstention_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 1.0
+    },
+    {
+      "name": "main.adjudicator.actions.determinate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.actions.errors",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.false_accusations",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.misses",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.actions.error_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.actions.false_accusation_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.actions.miss_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.actions.abstention_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.combined.determinate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.combined.errors",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.combined.false_accusations",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.combined.misses",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.combined.error_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.combined.false_accusation_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.combined.miss_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.combined.abstention_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.linked.determinate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.linked.errors",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.linked.false_accusations",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.linked.misses",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.linked.error_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.linked.false_accusation_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.linked.miss_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.linked.abstention_rate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.error_rate.estimate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.error_rate.lo",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.error_rate.hi",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.error_rate.n_clusters",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 10
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.error_rate.n_valid",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 2000
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.false_accusation_rate.estimate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.false_accusation_rate.lo",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.false_accusation_rate.hi",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.false_accusation_rate.n_clusters",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 10
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.false_accusation_rate.n_valid",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 2000
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.miss_rate.estimate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.miss_rate.lo",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.miss_rate.hi",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": null
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.miss_rate.n_clusters",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 10
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.miss_rate.n_valid",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.abstention_rate.estimate",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.abstention_rate.lo",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.abstention_rate.hi",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0.0
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.abstention_rate.n_clusters",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 10
+    },
+    {
+      "name": "main.adjudicator.h1.linked_minus_combined.abstention_rate.n_valid",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 2000
+    },
+    {
+      "name": "main.adjudicator.h1.paired.pairs",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.h1.paired.only_a_correct",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.h1.paired.only_b_correct",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    },
+    {
+      "name": "main.adjudicator.h1.paired.both_correct",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 20
+    },
+    {
+      "name": "main.adjudicator.h1.paired.neither_correct",
+      "reference": "adjudicator",
+      "sha256": "4501b4fce098ea6b3004f1089f2dc52bf958265d9b8c26f98136881a54a31a83",
+      "source": "main__adjudicator.json",
+      "value": 0
+    }
+  ]
+}
