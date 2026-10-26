@@ -250,7 +250,7 @@ PY
 stage_reference_dev() {
   step "adjudicator on the 6 development fixtures (Sonnet; reference labels, never sees predictions)"
   [ -d review/fixture-dev ] || $E export-review --fixtures dev --out review/fixture-dev
-  $E reference run --exports review/fixture-dev --mode live --confirm-spend
+  $E reference run --exports review/fixture-dev --mode live --confirm-spend ${REFERENCE_RERUN:+--rerun}
   $E reference validate --exports review/fixture-dev
 }
 
